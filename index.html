@@ -133,7 +133,7 @@
             .info h3 { font-size: 1.1rem; }
             .goals-count { padding: 8px; min-width: 65px; font-size: 1.2rem; }
             .admin-panel { padding: 15px; }
-            .admin-table th:nth-child(3), .admin-table td:nth-child(3) { display: none; } /* Esconde equipe no mobile admin */
+            .admin-table th:nth-child(3), .admin-table td:nth-child(3) { display: none; }
         }
 
         .hidden { display: none !important; }
@@ -210,14 +210,17 @@
     </div>
 
     <script>
+        // CHAVE DE SEGURANÇA INTERNA (Altere aqui e nas Regras do Firebase se desejar)
+        const CHAVE_INTERNA = "mudar_essa_senha_123";
+
         // 1. CONFIGURAÇÃO FIREBASE (Ranking Gols)
         const firebaseConfig = {
-            databaseURL: "https://ranking-gols-default-rtdb.firebaseio.com"
+            databaseURL: "https://ranking-gols-default-rtdb.firebaseio.com/"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // 2. ESCUTA EM TEMPO REAL (Listener Fixo)
+        // 2. ESCUTA EM TEMPO REAL
         db.ref('jogadores').on('value', snapshot => {
             const data = snapshot.val();
             const jogadores = [];
@@ -259,7 +262,7 @@
             });
         }
 
-        // 4. FUNÇÕES DO ADMIN (Salvamento e Edição)
+        // 4. FUNÇÕES DO ADMIN (Salvamento, Edição e Exclusão)
         async function processarESalvar() {
             const nome = document.getElementById('cadNome').value.trim();
             const equipe = document.getElementById('cadEquipe').value.trim();
@@ -267,7 +270,7 @@
 
             if (!nome || !equipe) return Swal.fire('Erro', 'Nome e Equipe são obrigatórios', 'error');
 
-            Swal.fire({ title: 'Enviando ao Banco...', didOpen: () => Swal.showLoading() });
+            Swal.fire({ title: 'Enviando ao Banco...', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
 
             let fotoFinal = "https://via.placeholder.com/150?text=Sem+Foto";
             if (fotoInput.files[0]) {
@@ -279,12 +282,15 @@
                 equipe: equipe,
                 foto: fotoFinal,
                 gols: 0,
-                links: []
+                links: [],
+                chave_seguranca: CHAVE_INTERNA
             }).then(() => {
-                Swal.fire('Sucesso!', 'Jogador fixado no ranking.', 'success');
+                Swal.fire('Sucesso!', 'Jogador adicionado ao ranking.', 'success');
                 document.getElementById('cadNome').value = '';
                 document.getElementById('cadEquipe').value = '';
                 document.getElementById('cadFoto').value = '';
+            }).catch((error) => {
+                Swal.fire('Erro', 'Permissão negada pelo Firebase. Verifique suas regras!', 'error');
             });
         }
 
@@ -294,17 +300,34 @@
             tbody.innerHTML = '';
 
             lista.forEach(atleta => {
+                // Lista compacta de vídeos do atleta com opção de apagar individualmente
+                let linksHTML = '';
+                if (atleta.links && atleta.links.length > 0) {
+                    linksHTML = '<div style="margin-top:5px; font-size:0.8rem; display:flex; flex-direction:column; gap:4px;">';
+                    atleta.links.forEach((url, index) => {
+                        linksHTML += `
+                            <div style="display:flex; justify-content:space-between; align-items:center; background:#f0f0f0; padding:3px 6px; border-radius:4px; max-width:200px;">
+                                <a href="${url}" target="_blank" style="color:#3498db; text-decoration:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px;">Gol #${index+1}</a>
+                                <i class="fas fa-times" style="color:#e74c3c; cursor:pointer;" onclick="removerLinkVideo('${atleta.id}', ${index})" title="Remover este vídeo"></i>
+                            </div>`;
+                    });
+                    linksHTML += '</div>';
+                }
+
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td><img src="${atleta.foto}"></td>
-                    <td><strong>${atleta.nome}</strong><br><small>${atleta.equipe}</small></td>
+                    <td>
+                        <strong>${atleta.nome}</strong><br><small>${atleta.equipe}</small>
+                        ${linksHTML}
+                    </td>
                     <td>
                         <button class="btn btn-plus btn-sm" onclick="modificarGols('${atleta.id}', 1)">+</button>
                         <strong style="margin: 0 8px; font-size: 1.1rem">${atleta.gols}</strong>
                         <button class="btn btn-minus btn-sm" onclick="modificarGols('${atleta.id}', -1)">-</button>
                     </td>
                     <td>
-                        <button class="btn btn-link btn-sm" onclick="addVideo('${atleta.id}')" title="Link do Vídeo"><i class="fas fa-video"></i></button>
+                        <button class="btn btn-link btn-sm" onclick="addVideo('${atleta.id}')" title="Adicionar Link do Vídeo"><i class="fas fa-video"></i></button>
                         <button class="btn btn-del btn-sm" onclick="removerAtleta('${atleta.id}')"><i class="fas fa-trash"></i></button>
                     </td>
                 `;
@@ -313,17 +336,32 @@
         }
 
         function modificarGols(id, valor) {
-            db.ref('jogadores/' + id + '/gols').transaction(current => (current || 0) + valor);
+            const atletaRef = db.ref('jogadores/' + id);
+            atletaRef.once('value', snapshot => {
+                const atleta = snapshot.val();
+                if (atleta) {
+                    const novosGols = Math.max(0, (atleta.gols || 0) + valor);
+                    atletaRef.update({
+                        gols: novosGols,
+                        chave_seguranca: CHAVE_INTERNA
+                    });
+                }
+            });
         }
 
         function removerAtleta(id) {
             Swal.fire({
                 title: 'Excluir Atleta?',
+                text: "Esta ação não pode ser desfeita!",
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'Sim, apagar',
                 confirmButtonColor: '#e74c3c'
-            }).then(r => { if (r.isConfirmed) db.ref('jogadores/' + id).remove(); });
+            }).then(r => { 
+                if (r.isConfirmed) {
+                    db.ref('jogadores/' + id).remove(); 
+                }
+            });
         }
 
         function addVideo(id) {
@@ -335,18 +373,52 @@
                 confirmButtonText: 'Salvar Link'
             }).then((result) => {
                 if (result.value) {
-                    const ref = db.ref('jogadores/' + id + '/links');
+                    const ref = db.ref('jogadores/' + id);
                     ref.once('value', s => {
-                        const links = s.val() || [];
-                        links.push(result.value);
-                        ref.set(links);
-                        Swal.fire('Vídeo Adicionado!', '', 'success');
+                        const atleta = s.val();
+                        if (atleta) {
+                            const links = atleta.links || [];
+                            links.push(result.value);
+                            ref.update({
+                                links: links,
+                                chave_seguranca: CHAVE_INTERNA
+                            }).then(() => {
+                                Swal.fire('Vídeo Adicionado!', '', 'success');
+                            });
+                        }
                     });
                 }
             });
         }
 
-        // 5. UTILITÁRIOS (Compressão e Modais)
+        function removerLinkVideo(id, index) {
+            Swal.fire({
+                title: 'Remover este vídeo do gol?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sim, remover',
+                confirmButtonColor: '#e74c3c'
+            }).then(r => {
+                if (r.isConfirmed) {
+                    const ref = db.ref('jogadores/' + id);
+                    ref.once('value', s => {
+                        const atleta = s.val();
+                        if (atleta) {
+                            const links = atleta.links || [];
+                            links.splice(index, 1);
+                            ref.update({
+                                links: links,
+                                chave_seguranca: CHAVE_INTERNA
+                            }).then(() => {
+                                Swal.fire('Removido!', 'O link foi retirado.', 'success');
+                            });
+                        }
+                    });
+                }
+            });
+        }
+
+        // 5. UTILITÁRIOS (Compressão, Modais e Telas)
         function comprimirImagem(file) {
             return new Promise((resolve) => {
                 const reader = new FileReader();
@@ -357,11 +429,11 @@
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
                         const ctx = canvas.getContext('2d');
-                        const size = 200; // Tamanho máximo da foto
+                        const size = 200; 
                         canvas.width = size;
                         canvas.height = size;
                         ctx.drawImage(img, 0, 0, size, size);
-                        resolve(canvas.toDataURL('image/jpeg', 0.7)); // Qualidade 70%
+                        resolve(canvas.toDataURL('image/jpeg', 0.7)); 
                     };
                 };
             });
@@ -405,7 +477,7 @@
 
         function sairAdmin() { location.reload(); }
 
-        // Fechar modal ao clicar fora
+        // Fechar modal ao clicar fora dele
         window.onclick = (e) => { if (e.target == document.getElementById('modalGols')) fecharModal(); }
     </script>
 </body>
