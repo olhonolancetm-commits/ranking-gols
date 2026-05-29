@@ -5,120 +5,135 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Artilheiro da Temporada | Olho no Lance</title>
     
-    <!-- Firebase v8 -->
+    <!-- SDKs do Firebase (v8 - Estável) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     
-    <!-- Google Fonts & Icons -->
+    <!-- Design e Ícones -->
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
         :root {
-            --green-field: #2ecc71;
-            --green-dark: #1b3d1b;
+            --primary: #2ecc71;
+            --primary-dark: #1b3d1b;
             --stadium-bg: #0b0c10;
             --accent: #bfff00;
             --white: #ffffff;
-            --glass: rgba(255, 255, 255, 0.1);
+            --glass: rgba(255, 255, 255, 0.08);
+            --danger: #e74c3c;
         }
+
+        * { box-sizing: border-box; }
 
         body {
             margin: 0; font-family: 'Rajdhani', sans-serif;
             background-color: var(--stadium-bg); color: var(--white);
             background-image: radial-gradient(circle at top, #1f402b 0%, #0b0c10 100%);
-            min-height: 100vh; overflow-x: hidden;
+            background-attachment: fixed;
+            min-height: 100vh; padding-bottom: 50px;
         }
 
-        /* HEADER */
         header {
-            text-align: center; padding: 40px 20px;
+            text-align: center; padding: 50px 20px;
             border-bottom: 4px solid var(--accent);
-            background: rgba(0,0,0,0.5);
+            background: rgba(0,0,0,0.6);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
+
         header h1 { 
-            font-family: 'Orbitron', sans-serif; font-size: 2.5rem; 
+            font-family: 'Orbitron', sans-serif; font-size: 2.8rem; 
             margin: 0; color: var(--accent); text-transform: uppercase;
-            text-shadow: 0 0 15px rgba(191, 255, 0, 0.5);
+            text-shadow: 0 0 15px rgba(191, 255, 0, 0.6);
         }
-        header p { margin: 5px 0 0; opacity: 0.8; letter-spacing: 2px; }
 
-        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+        header p { margin: 10px 0 0; opacity: 0.9; letter-spacing: 3px; font-weight: bold; }
 
-        /* NAVEGAÇÃO / LOGIN BAR */
+        .container { max-width: 850px; margin: 0 auto; padding: 20px; }
+
+        /* BOTÃO ÁREA PRIVADA */
         .admin-trigger {
-            position: fixed; top: 10px; right: 10px; background: var(--glass);
+            position: absolute; top: 15px; right: 15px; background: var(--glass);
             border: 1px solid var(--accent); color: var(--accent);
-            padding: 8px 15px; border-radius: 20px; cursor: pointer; font-weight: bold;
-            transition: 0.3s; z-index: 100; font-size: 0.8rem;
+            padding: 8px 18px; border-radius: 30px; cursor: pointer; font-weight: bold;
+            transition: 0.3s; font-size: 0.8rem; z-index: 999;
         }
         .admin-trigger:hover { background: var(--accent); color: #000; }
 
-        /* RANKING LIST (CLIENTE) */
-        .ranking-list { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+        /* LISTA DE RANKING (CLIENTE) */
+        .ranking-list { display: flex; flex-direction: column; gap: 15px; margin-top: 30px; }
+        
         .player-card {
             display: flex; align-items: center; background: var(--glass);
-            padding: 15px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.05);
-            cursor: pointer; transition: 0.3s; position: relative; overflow: hidden;
+            padding: 15px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05);
+            cursor: pointer; transition: 0.4s; backdrop-filter: blur(10px);
         }
-        .player-card:hover { transform: scale(1.02); background: rgba(255,255,255,0.15); border-color: var(--accent); }
         
-        .pos { width: 50px; font-family: 'Orbitron'; font-size: 1.5rem; color: var(--accent); text-align: center; }
-        .photo-frame { width: 65px; height: 65px; border-radius: 50%; border: 3px solid var(--green-field); overflow: hidden; margin: 0 15px; background: #222; }
+        .player-card:hover { transform: translateY(-5px); background: rgba(255,255,255,0.15); border-color: var(--accent); }
+        
+        .pos { width: 60px; font-family: 'Orbitron'; font-size: 1.8rem; color: var(--accent); text-align: center; }
+        .photo-frame { width: 70px; height: 70px; border-radius: 50%; border: 3px solid var(--primary); overflow: hidden; margin: 0 20px; background: #111; }
         .photo-frame img { width: 100%; height: 100%; object-fit: cover; }
         
         .info { flex: 1; }
-        .info h3 { margin: 0; font-size: 1.4rem; text-transform: uppercase; }
-        .info p { margin: 0; opacity: 0.6; font-size: 0.9rem; }
+        .info h3 { margin: 0; font-size: 1.5rem; text-transform: uppercase; color: #fff; }
+        .info p { margin: 2px 0 0; opacity: 0.7; font-size: 1rem; color: var(--primary); font-weight: bold; }
         
         .goals-count { 
-            text-align: center; padding: 10px 20px; background: var(--green-field); 
-            color: #000; border-radius: 10px; font-family: 'Orbitron'; min-width: 60px;
+            text-align: center; padding: 12px; background: var(--primary); 
+            color: #000; border-radius: 15px; font-family: 'Orbitron'; min-width: 85px;
+            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
         }
-        .goals-count span { display: block; font-size: 0.7rem; font-weight: bold; }
+        .goals-count span { display: block; font-size: 0.7rem; font-weight: 900; margin-top: -5px; }
 
-        /* ADMIN PANEL */
-        .admin-panel { 
-            display: none; background: #fff; color: #333; border-radius: 20px; 
-            padding: 30px; margin-top: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-        }
-        .admin-panel h2 { margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        
+        /* PAINEL ADMIN */
+        .admin-panel { display: none; background: #fff; color: #333; border-radius: 25px; padding: 30px; margin-top: 30px; animation: slideUp 0.5s ease; }
+        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .form-box { background: #f4f7f6; padding: 25px; border-radius: 20px; margin-bottom: 30px; border: 1px solid #ddd; }
         .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
-        .form-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: bold; font-size: 0.9rem; }
+        .form-group input { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 10px; font-family: inherit; font-size: 1rem; }
+        .form-group input:focus { border-color: var(--primary); outline: none; }
 
-        .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        .btn-add { background: var(--green-field); color: #fff; width: 100%; font-size: 1.1rem; }
-        .btn-sm { padding: 5px 10px; font-size: 0.8rem; }
-        .btn-plus { background: var(--green-field); color: white; }
-        .btn-minus { background: #e74c3c; color: white; }
-        .btn-del { background: #333; color: white; }
+        .btn { padding: 12px 25px; border: none; border-radius: 10px; cursor: pointer; font-weight: 800; transition: 0.3s; font-family: 'Rajdhani'; text-transform: uppercase; }
+        .btn-add { background: var(--primary); color: #fff; width: 100%; font-size: 1.2rem; margin-top: 10px; }
+        .btn-add:hover { background: #27ae60; }
+        .btn-sm { padding: 6px 12px; font-size: 0.85rem; margin: 2px; }
+        .btn-plus { background: var(--primary); color: white; }
+        .btn-minus { background: #95a5a6; color: white; }
+        .btn-del { background: var(--danger); color: white; }
+        .btn-link { background: #3498db; color: white; }
 
-        /* TABELA ADMIN */
-        .admin-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        .admin-table th, .admin-table td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
-        .admin-table img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+        .admin-table { width: 100%; border-collapse: collapse; }
+        .admin-table th { text-align: left; padding: 15px; background: #eee; font-size: 0.8rem; text-transform: uppercase; }
+        .admin-table td { padding: 15px; border-bottom: 1px solid #eee; }
+        .admin-table img { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid #ddd; }
 
         /* MODAL */
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; padding: 20px; }
-        .modal-content { background: var(--stadium-bg); padding: 30px; border-radius: 20px; border: 2px solid var(--accent); width: 100%; max-width: 500px; position: relative; }
-        .close-modal { position: absolute; top: 15px; right: 15px; font-size: 1.5rem; cursor: pointer; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 9999; justify-content: center; align-items: center; padding: 20px; }
+        .modal-content { background: var(--stadium-bg); padding: 40px; border-radius: 30px; border: 2px solid var(--accent); width: 100%; max-width: 500px; position: relative; text-align: center; }
+        .close-modal { position: absolute; top: 20px; right: 20px; font-size: 2rem; cursor: pointer; color: #666; }
+        .close-modal:hover { color: #fff; }
         
         .video-link { 
-            display: block; background: var(--glass); padding: 12px; margin: 10px 0; 
-            border-radius: 10px; color: var(--accent); text-decoration: none; border: 1px solid rgba(255,255,255,0.1);
-            transition: 0.3s;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            background: var(--glass); padding: 15px; margin: 12px 0; 
+            border-radius: 15px; color: var(--accent); text-decoration: none; border: 1px solid rgba(255,255,255,0.1);
+            transition: 0.3s; font-weight: bold;
         }
-        .video-link:hover { background: var(--accent); color: #000; }
+        .video-link:hover { background: var(--accent); color: #000; transform: scale(1.03); }
 
+        /* RESPONSIVIDADE */
         @media (max-width: 600px) {
-            header h1 { font-size: 1.5rem; }
-            .pos { font-size: 1.1rem; width: 30px; }
-            .photo-frame { width: 50px; height: 50px; }
+            header h1 { font-size: 1.6rem; }
+            .pos { font-size: 1.2rem; width: 35px; }
+            .photo-frame { width: 55px; height: 55px; margin: 0 12px; }
             .info h3 { font-size: 1.1rem; }
-            .goals-count { padding: 5px 10px; font-size: 1.2rem; }
+            .goals-count { padding: 8px; min-width: 65px; font-size: 1.2rem; }
+            .admin-panel { padding: 15px; }
+            .admin-table th:nth-child(3), .admin-table td:nth-child(3) { display: none; } /* Esconde equipe no mobile admin */
         }
 
         .hidden { display: none !important; }
@@ -126,106 +141,261 @@
 </head>
 <body>
 
-    <button class="admin-trigger" id="btnAdminAccess" onclick="authAdmin()">
-        <i class="fas fa-lock"></i> ÁREA PRIVADA
+    <button class="admin-trigger" id="btnAdminAccess" onclick="solicitarAcesso()">
+        <i class="fas fa-lock"></i> PAINEL ADM
     </button>
 
     <header>
         <h1>Artilheiro da Temporada</h1>
-        <p>OFERECIMENTO: OLHO NO LANCE</p>
+        <p>OLHO NO LANCE</p>
     </header>
 
     <div class="container">
         
-        <!-- PAINEL CLIENTE (RANKING) -->
+        <!-- VISÃO DO CLIENTE -->
         <div id="painelCliente">
             <div class="ranking-list" id="rankingList">
-                <!-- Jogadores injetados via JS -->
-                <p style="text-align: center; opacity: 0.5;">Carregando artilharia...</p>
+                <p style="text-align: center; opacity: 0.5;">Carregando craques...</p>
             </div>
         </div>
 
-        <!-- PAINEL ADMINISTRADOR -->
+        <!-- VISÃO DO ADMINISTRADOR -->
         <div id="painelAdmin" class="admin-panel">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h2>Gerenciar Jogadores</h2>
-                <button class="btn btn-del btn-sm" onclick="sairAdmin()">Sair</button>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin:0">Gestão de Artilheiros</h2>
+                <button class="btn btn-del btn-sm" onclick="sairAdmin()">Sair do Painel</button>
             </div>
             
-            <div class="form-group" style="background: #f9f9f9; padding: 20px; border-radius: 15px;">
-                <h3>Adicionar Novo Craque</h3>
+            <div class="form-box">
+                <h3 style="margin-top:0">Cadastrar Jogador</h3>
                 <div class="form-group">
-                    <label>Nome do Jogador</label>
-                    <input type="text" id="cadNome" placeholder="Ex: Pelé">
+                    <label>Nome do Atleta</label>
+                    <input type="text" id="cadNome" placeholder="Ex: Ronaldinho">
                 </div>
                 <div class="form-group">
-                    <label>Equipe / Time</label>
-                    <input type="text" id="cadEquipe" placeholder="Ex: Santos FC">
+                    <label>Equipe</label>
+                    <input type="text" id="cadEquipe" placeholder="Ex: Grêmio">
                 </div>
                 <div class="form-group">
-                    <label>Foto do Jogador (Upload)</label>
+                    <label>Foto (Redimensionada Automaticamente)</label>
                     <input type="file" id="cadFoto" accept="image/*">
                 </div>
-                <button class="btn btn-add" onclick="salvarJogador()">CADASTRAR JOGADOR</button>
+                <button class="btn btn-add" onclick="processarESalvar()">SALVAR NO RANKING</button>
             </div>
 
-            <table class="admin-table">
-                <thead>
-                    <tr>
-                        <th>Foto</th>
-                        <th>Nome</th>
-                        <th>Gols</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody id="adminTableBody">
-                    <!-- Gerenciamento injetado via JS -->
-                </tbody>
-            </table>
+            <div style="overflow-x: auto;">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Foto</th>
+                            <th>Nome / Equipe</th>
+                            <th>Gols</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminTableBody"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
-    <!-- MODAL LINKS DOS GOLS -->
+    <!-- MODAL DE VÍDEOS -->
     <div id="modalGols" class="modal">
         <div class="modal-content">
             <span class="close-modal" onclick="fecharModal()">&times;</span>
-            <h2 style="font-family: 'Orbitron'; color: var(--accent);" id="modalPlayerName">Veja Meus Gols</h2>
-            <div id="linksContainer"></div>
+            <i class="fas fa-video" style="color: var(--accent); font-size: 2rem; margin-bottom: 10px;"></i>
+            <h2 style="font-family: 'Orbitron'; color: var(--white);" id="modalPlayerName">Gols do Craque</h2>
+            <div id="linksContainer" style="margin-top: 20px;"></div>
         </div>
     </div>
 
     <script>
-        // CONFIGURAÇÃO FIREBASE
+        // 1. CONFIGURAÇÃO FIREBASE (Ranking Gols)
         const firebaseConfig = {
             databaseURL: "https://ranking-gols-default-rtdb.firebaseio.com"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let isAdmin = false;
+        // 2. ESCUTA EM TEMPO REAL (Listener Fixo)
+        db.ref('jogadores').on('value', snapshot => {
+            const data = snapshot.val();
+            const jogadores = [];
+            for (let id in data) {
+                jogadores.push({ id, ...data[id] });
+            }
 
-        // LOGIN ADMIN SIMPLES
-        function authAdmin() {
+            // Ordenação decrescente de gols
+            jogadores.sort((a, b) => b.gols - a.gols);
+
+            atualizarInterfaceCliente(jogadores);
+            atualizarInterfaceAdmin(jogadores);
+        });
+
+        // 3. FUNÇÕES DO CLIENTE
+        function atualizarInterfaceCliente(lista) {
+            const container = document.getElementById('rankingList');
+            container.innerHTML = '';
+
+            if (lista.length === 0) {
+                container.innerHTML = '<p style="text-align:center; opacity:0.5;">Nenhum jogador cadastrado.</p>';
+                return;
+            }
+
+            lista.forEach((atleta, i) => {
+                const card = document.createElement('div');
+                card.className = 'player-card';
+                card.onclick = () => abrirGaleriaGols(atleta.nome, atleta.links);
+                card.innerHTML = `
+                    <div class="pos">${i + 1}º</div>
+                    <div class="photo-frame"><img src="${atleta.foto}"></div>
+                    <div class="info">
+                        <h3>${atleta.nome}</h3>
+                        <p>${atleta.equipe}</p>
+                    </div>
+                    <div class="goals-count">${atleta.gols}<span>GOLS</span></div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // 4. FUNÇÕES DO ADMIN (Salvamento e Edição)
+        async function processarESalvar() {
+            const nome = document.getElementById('cadNome').value.trim();
+            const equipe = document.getElementById('cadEquipe').value.trim();
+            const fotoInput = document.getElementById('cadFoto');
+
+            if (!nome || !equipe) return Swal.fire('Erro', 'Nome e Equipe são obrigatórios', 'error');
+
+            Swal.fire({ title: 'Enviando ao Banco...', didOpen: () => Swal.showLoading() });
+
+            let fotoFinal = "https://via.placeholder.com/150?text=Sem+Foto";
+            if (fotoInput.files[0]) {
+                fotoFinal = await comprimirImagem(fotoInput.files[0]);
+            }
+
+            db.ref('jogadores').push({
+                nome: nome,
+                equipe: equipe,
+                foto: fotoFinal,
+                gols: 0,
+                links: []
+            }).then(() => {
+                Swal.fire('Sucesso!', 'Jogador fixado no ranking.', 'success');
+                document.getElementById('cadNome').value = '';
+                document.getElementById('cadEquipe').value = '';
+                document.getElementById('cadFoto').value = '';
+            });
+        }
+
+        function atualizarInterfaceAdmin(lista) {
+            const tbody = document.getElementById('adminTableBody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            lista.forEach(atleta => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><img src="${atleta.foto}"></td>
+                    <td><strong>${atleta.nome}</strong><br><small>${atleta.equipe}</small></td>
+                    <td>
+                        <button class="btn btn-plus btn-sm" onclick="modificarGols('${atleta.id}', 1)">+</button>
+                        <strong style="margin: 0 8px; font-size: 1.1rem">${atleta.gols}</strong>
+                        <button class="btn btn-minus btn-sm" onclick="modificarGols('${atleta.id}', -1)">-</button>
+                    </td>
+                    <td>
+                        <button class="btn btn-link btn-sm" onclick="addVideo('${atleta.id}')" title="Link do Vídeo"><i class="fas fa-video"></i></button>
+                        <button class="btn btn-del btn-sm" onclick="removerAtleta('${atleta.id}')"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function modificarGols(id, valor) {
+            db.ref('jogadores/' + id + '/gols').transaction(current => (current || 0) + valor);
+        }
+
+        function removerAtleta(id) {
             Swal.fire({
-                title: 'Acesso Administrativo',
-                html: `
-                    <input type="text" id="swal-input1" class="swal2-input" placeholder="Usuário">
-                    <input type="password" id="swal-input2" class="swal2-input" placeholder="Senha">
-                `,
-                focusConfirm: false,
-                confirmButtonText: 'Entrar',
-                confirmButtonColor: '#2ecc71',
-                preConfirm: () => {
-                    const user = document.getElementById('swal-input1').value;
-                    const pass = document.getElementById('swal-input2').value;
-                    if (user === 'admin' && pass === '123456') {
-                        return true;
-                    }
-                    Swal.showValidationMessage('Acesso Negado!');
-                }
+                title: 'Excluir Atleta?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sim, apagar',
+                confirmButtonColor: '#e74c3c'
+            }).then(r => { if (r.isConfirmed) db.ref('jogadores/' + id).remove(); });
+        }
+
+        function addVideo(id) {
+            Swal.fire({
+                title: 'Link do Vídeo do Gol',
+                input: 'url',
+                inputPlaceholder: 'https://youtube.com/shorts/...',
+                showCancelButton: true,
+                confirmButtonText: 'Salvar Link'
             }).then((result) => {
-                if (result.isConfirmed) {
-                    isAdmin = true;
+                if (result.value) {
+                    const ref = db.ref('jogadores/' + id + '/links');
+                    ref.once('value', s => {
+                        const links = s.val() || [];
+                        links.push(result.value);
+                        ref.set(links);
+                        Swal.fire('Vídeo Adicionado!', '', 'success');
+                    });
+                }
+            });
+        }
+
+        // 5. UTILITÁRIOS (Compressão e Modais)
+        function comprimirImagem(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        const size = 200; // Tamanho máximo da foto
+                        canvas.width = size;
+                        canvas.height = size;
+                        ctx.drawImage(img, 0, 0, size, size);
+                        resolve(canvas.toDataURL('image/jpeg', 0.7)); // Qualidade 70%
+                    };
+                };
+            });
+        }
+
+        function abrirGaleriaGols(nome, links) {
+            const container = document.getElementById('linksContainer');
+            document.getElementById('modalPlayerName').innerText = nome;
+            container.innerHTML = '';
+            if (!links || links.length === 0) {
+                container.innerHTML = '<p style="color:#888">Nenhum vídeo registrado para este atleta.</p>';
+            } else {
+                links.forEach((url, i) => {
+                    container.innerHTML += `<a href="${url}" target="_blank" class="video-link"><i class="fab fa-youtube"></i> ASSISTIR GOL #${i + 1}</a>`;
+                });
+            }
+            document.getElementById('modalGols').style.display = 'flex';
+        }
+
+        function fecharModal() { document.getElementById('modalGols').style.display = 'none'; }
+
+        function solicitarAcesso() {
+            Swal.fire({
+                title: 'Login Administrativo',
+                html: `<input type="text" id="user" class="swal2-input" placeholder="Usuário">
+                       <input type="password" id="pass" class="swal2-input" placeholder="Senha">`,
+                preConfirm: () => {
+                    const u = document.getElementById('user').value;
+                    const p = document.getElementById('pass').value;
+                    if (u === 'admin' && p === '123456') return true;
+                    Swal.showValidationMessage('Acesso negado!');
+                }
+            }).then(r => {
+                if (r.isConfirmed) {
                     document.getElementById('painelCliente').classList.add('hidden');
                     document.getElementById('painelAdmin').style.display = 'block';
                     document.getElementById('btnAdminAccess').classList.add('hidden');
@@ -233,191 +403,10 @@
             });
         }
 
-        function sairAdmin() {
-            location.reload();
-        }
+        function sairAdmin() { location.reload(); }
 
-        // SALVAR JOGADOR
-        async function salvarJogador() {
-            const nome = document.getElementById('cadNome').value;
-            const equipe = document.getElementById('cadEquipe').value;
-            const fotoInput = document.getElementById('cadFoto');
-            
-            if(!nome || !equipe) return Swal.fire('Erro', 'Preencha nome e equipe', 'error');
-
-            let fotoBase64 = "https://via.placeholder.com/150?text=Sem+Foto";
-
-            if (fotoInput.files[0]) {
-                fotoBase64 = await convertBase64(fotoInput.files[0]);
-            }
-
-            db.ref('jogadores').push({
-                nome: nome,
-                equipe: equipe,
-                foto: fotoBase64,
-                gols: 0,
-                links: []
-            }).then(() => {
-                Swal.fire('Sucesso', 'Jogador cadastrado!', 'success');
-                document.getElementById('cadNome').value = '';
-                document.getElementById('cadEquipe').value = '';
-                document.getElementById('cadFoto').value = '';
-            });
-        }
-
-        function convertBase64(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = error => reject(error);
-            });
-        }
-
-        // ESCUTAR DADOS EM TEMPO REAL
-        db.ref('jogadores').on('value', snapshot => {
-            const data = snapshot.val();
-            const jogadoresArray = [];
-
-            for (let id in data) {
-                jogadoresArray.push({ id, ...data[id] });
-            }
-
-            // Ordenar por Gols (Decrescente)
-            jogadoresArray.sort((a, b) => b.gols - a.gols);
-
-            renderCliente(jogadoresArray);
-            renderAdmin(jogadoresArray);
-        });
-
-        // RENDERIZAÇÃO CLIENTE
-        function renderCliente(jogadores) {
-            const list = document.getElementById('rankingList');
-            list.innerHTML = '';
-
-            jogadores.forEach((j, index) => {
-                const card = document.createElement('div');
-                card.className = 'player-card';
-                card.onclick = () => verGols(j.nome, j.links);
-                
-                card.innerHTML = `
-                    <div class="pos">${index + 1}º</div>
-                    <div class="photo-frame">
-                        <img src="${j.foto}">
-                    </div>
-                    <div class="info">
-                        <h3>${j.nome}</h3>
-                        <p><i class="fas fa-users"></i> ${j.equipe}</p>
-                    </div>
-                    <div class="goals-count">
-                        ${j.gols}
-                        <span>GOLS</span>
-                    </div>
-                `;
-                list.appendChild(card);
-            });
-        }
-
-        // RENDERIZAÇÃO ADMIN
-        function renderAdmin(jogadores) {
-            const tbody = document.getElementById('adminTableBody');
-            tbody.innerHTML = '';
-
-            jogadores.forEach(j => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td><img src="${j.foto}"></td>
-                    <td><strong>${j.nome}</strong><br><small>${j.equipe}</small></td>
-                    <td>
-                        <button class="btn btn-plus btn-sm" onclick="alterarGol('${j.id}', 1)">+</button>
-                        <b style="margin: 0 10px">${j.gols}</b>
-                        <button class="btn btn-minus btn-sm" onclick="alterarGol('${j.id}', -1)">-</button>
-                    </td>
-                    <td>
-                        <button class="btn btn-plus btn-sm" onclick="gerenciarLinks('${j.id}')">LINK</button>
-                        <button class="btn btn-del btn-sm" onclick="excluirJogador('${j.id}')">X</button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        // FUNÇÕES DE EDIÇÃO
-        function alterarGol(id, qtd) {
-            const ref = db.ref('jogadores/' + id + '/gols');
-            ref.transaction(currentGols => {
-                return (currentGols || 0) + qtd;
-            });
-        }
-
-        function excluirJogador(id) {
-            Swal.fire({
-                title: 'Tem certeza?',
-                text: "O jogador será removido permanentemente!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#e74c3c',
-                cancelButtonText: 'Cancelar',
-                confirmButtonText: 'Sim, excluir!'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    db.ref('jogadores/' + id).remove();
-                }
-            });
-        }
-
-        function gerenciarLinks(id) {
-            Swal.fire({
-                title: 'Adicionar Link do Gol',
-                input: 'url',
-                inputLabel: 'Cole a URL do vídeo do gol',
-                inputPlaceholder: 'https://youtube.com/...',
-                showCancelButton: true,
-                confirmButtonText: 'Salvar Link',
-                confirmButtonColor: '#2ecc71'
-            }).then((result) => {
-                if (result.value) {
-                    const linksRef = db.ref('jogadores/' + id + '/links');
-                    linksRef.once('value', snapshot => {
-                        const currentLinks = snapshot.val() || [];
-                        currentLinks.push(result.value);
-                        linksRef.set(currentLinks);
-                        Swal.fire('Salvo!', 'Link adicionado com sucesso.', 'success');
-                    });
-                }
-            });
-        }
-
-        // MODAL CLIENTE
-        function verGols(nome, links) {
-            const container = document.getElementById('linksContainer');
-            document.getElementById('modalPlayerName').innerText = `Gols de ${nome}`;
-            container.innerHTML = '';
-
-            if(!links || links.length === 0) {
-                container.innerHTML = '<p style="text-align:center; opacity:0.5;">Nenhum vídeo cadastrado ainda.</p>';
-            } else {
-                links.forEach((link, i) => {
-                    const a = document.createElement('a');
-                    a.href = link;
-                    a.target = '_blank';
-                    a.className = 'video-link';
-                    a.innerHTML = `<i class="fab fa-youtube"></i> Assitir Gol #${i+1}`;
-                    container.appendChild(a);
-                });
-            }
-
-            document.getElementById('modalGols').style.display = 'flex';
-        }
-
-        function fecharModal() {
-            document.getElementById('modalGols').style.display = 'none';
-        }
-
-        window.onclick = function(event) {
-            const modal = document.getElementById('modalGols');
-            if (event.target == modal) fecharModal();
-        }
+        // Fechar modal ao clicar fora
+        window.onclick = (e) => { if (e.target == document.getElementById('modalGols')) fecharModal(); }
     </script>
 </body>
 </html>
