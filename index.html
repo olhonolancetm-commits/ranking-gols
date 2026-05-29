@@ -1,405 +1,320 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Artilheiro da Temporada - Olho no Lance</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --bg-principal: #0d1117;
-            --bg-card: #161b22;
-            --bg-input: #21262d;
-            --accent: #00ff66;
-            --accent-hover: #00cc52;
-            --texto-claro: #f0f6fc;
-            --texto-mutado: #8b949e;
-            --danger: #ff4d4d;
-            --danger-hover: #cc3333;
-            --borda: #30363d;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background-color: var(--bg-principal); color: var(--texto-claro); min-height: 100vh; padding-bottom: 60px; }
-        
-        header { background: linear-gradient(135deg, #05070a 0%, #161b22 100%); padding: 20px; text-align: center; border-bottom: 3px solid var(--accent); position: relative; }
-        header h1 { font-size: 1.8rem; text-transform: uppercase; letter-spacing: 1px; }
-        header h1 span { color: var(--accent); }
-        header p { font-size: 0.9rem; color: var(--texto-mutado); margin-top: 5px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; }
-
-        .nav-btn { position: absolute; right: 20px; top: 25px; background: transparent; border: 1px solid var(--accent); color: var(--accent); padding: 8px 16px; border-radius: 20px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        .nav-btn:hover { background: var(--accent); color: var(--bg-principal); }
-
-        .container { max-width: 800px; margin: 30px auto; padding: 0 15px; }
-        .view-section { display: none; }
-        .view-section.active { display: block; }
-
-        .ranking-lista { display: flex; flex-direction: column; gap: 12px; }
-        .jogador-row { background-color: var(--bg-card); border: 1px solid var(--borda); border-radius: 12px; display: flex; align-items: center; padding: 15px; cursor: pointer; transition: 0.2s; }
-        .jogador-row:hover { transform: translateY(-2px); border-color: var(--accent); }
-
-        .posicao { font-size: 1.4rem; font-weight: 900; width: 45px; text-align: center; color: var(--accent); font-style: italic; }
-        .jogador-row:nth-child(1) .posicao { color: #ffd700; font-size: 1.8rem; }
-        .jogador-row:nth-child(2) .posicao { color: #c0c0c0; }
-        .jogador-row:nth-child(3) .posicao { color: #cd7f32; }
-
-        .foto-container { width: 55px; height: 55px; border-radius: 50%; overflow: hidden; border: 2px solid var(--borda); margin-right: 15px; background: #21262d; display: flex; align-items: center; justify-content: center; }
-        .foto-container img { width: 100%; height: 100%; object-fit: cover; }
-        .foto-container i { font-size: 1.5rem; color: var(--texto-mutado); }
-
-        .dados { flex-grow: 1; }
-        .nome-jogador { font-size: 1.1rem; font-weight: bold; }
-        .equipe-jogador { font-size: 0.85rem; color: var(--texto-mutado); }
-        .gols-contador { text-align: right; padding-right: 10px; }
-        .gols-numero { font-size: 1.6rem; font-weight: bold; line-height: 1; }
-        .gols-label { font-size: 0.7rem; color: var(--texto-mutado); text-transform: uppercase; }
-
-        .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .btn { background-color: var(--accent); color: var(--bg-principal); border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
-        .btn:hover { background-color: var(--accent-hover); }
-        .btn-danger { background-color: var(--danger); color: white; }
-        .btn-secundario { background-color: var(--bg-input); color: var(--texto-claro); border: 1px solid var(--borda); }
-
-        .card-admin { background-color: var(--bg-card); border: 1px solid var(--borda); border-radius: 12px; padding: 20px; margin-bottom: 15px; }
-        .grid-admin-jogador { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px; }
-        .controles-gols { display: flex; align-items: center; gap: 10px; background: var(--bg-input); padding: 5px 10px; border-radius: 8px; border: 1px solid var(--borda); }
-        .btn-gol { background: transparent; border: none; color: var(--texto-claro); font-size: 1.2rem; cursor: pointer; width: 30px; height: 30px; }
-
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; padding: 15px; }
-        .modal-content { background-color: var(--bg-card); border: 1px solid var(--borda); border-radius: 16px; width: 100%; max-width: 500px; padding: 25px; position: relative; }
-        .close-modal { position: absolute; top: 15px; right: 20px; font-size: 1.5rem; cursor: pointer; color: var(--texto-mutado); }
-
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; font-size: 0.9rem; color: var(--texto-mutado); }
-        .form-group input { width: 100%; background-color: var(--bg-input); border: 1px solid var(--borda); padding: 10px; border-radius: 6px; color: var(--texto-claro); }
-
-        .link-item { display: flex; justify-content: space-between; align-items: center; background: var(--bg-input); padding: 8px 12px; border-radius: 6px; margin-top: 8px; border: 1px solid var(--borda); }
-        .link-item a { color: var(--accent); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 80%; }
-
-        @media (max-width: 600px) {
-            header h1 { font-size: 1.4rem; }
-            .nav-btn { position: static; margin-top: 10px; display: inline-block; }
-            .grid-admin-jogador { flex-direction: column; align-items: flex-start; }
-            .jogador-row { padding: 10px; }
-        }
-    </style>
-</head>
-<body>
-
-    <header>
-        <h1>Artilheiro da <span>Temporada</span></h1>
-        <p>Oferecimento: Olho no Lance</p>
-        <button id="btnAlternarJanela" class="nav-btn" onclick="abrirLoginAdmin()"><i class="fa-solid fa-lock"></i> Admin</button>
-    </header>
-
-    <div class="container">
-        <section id="secao-cliente" class="view-section active">
-            <div id="ranking-container" class="ranking-lista"></div>
-        </section>
-
-        <section id="secao-admin" class="view-section">
-            <div class="admin-header">
-                <h2>Painel Administrativo</h2>
-                <div style="display: flex; gap: 10px;">
-                    <button class="btn" onclick="abrirModalJogador()"><i class="fa-solid fa-plus"></i> Novo Jogador</button>
-                    <button class="btn btn-secundario" onclick="fazerLogout()"><i class="fa-solid fa-right-from-bracket"></i> Sair</button>
-                </div>
-            </div>
-            <div id="admin-lista-jogadores"></div>
-        </section>
-    </div>
-
-    <div id="modal-login" class="modal">
-        <div class="modal-content">
-            <span class="close-modal" onclick="fecharModal('modal-login')">&times;</span>
-            <h3 style="margin-bottom:20px;"><i class="fa-solid fa-lock"></i> Login na Nuvem</h3>
-            <div class="form-group">
-                <label>Email do Admin</label>
-                <input type="email" id="login-user" placeholder="admin@email.com">
-            </div>
-            <div class="form-group">
-                <label>Senha</label>
-                <input type="password" id="login-pass">
-            </div>
-            <button class="btn" style="width: 100%; justify-content: center;" onclick="autenticarAdmin()">Entrar</button>
-        </div>
-    </div>
-
-    <div id="modal-jogador" class="modal">
-        <div class="modal-content">
-            <span class="close-modal" onclick="fecharModal('modal-jogador')">&times;</span>
-            <h3 id="modal-jogador-titulo" style="margin-bottom: 20px;">Novo Jogador</h3>
-            <input type="hidden" id="jogador-id-edit">
-            <div class="form-group"><label>Nome</label><input type="text" id="form-nome" required></div>
-            <div class="form-group"><label>Equipe</label><input type="text" id="form-equipe" required></div>
-            <div class="form-group"><label>URL da Foto</label><input type="url" id="form-foto"></div>
-            <div class="form-group" id="grupo-gols-inicial"><label>Gols Iniciais</label><input type="number" id="form-gols" value="0"></div>
-            <button class="btn" style="width: 100%; justify-content: center;" onclick="salvarJogador()">Salvar</button>
-        </div>
-    </div>
-
-    <div id="modal-videos-cliente" class="modal">
-        <div class="modal-content">
-            <span class="close-modal" onclick="fecharModal('modal-videos-cliente')">&times;</span>
-            <h3 id="video-cliente-nome" style="color: var(--accent);">Jogador</h3>
-            <p id="video-cliente-equipe" style="font-size:0.9rem; color:var(--texto-mutado); margin-bottom:20px;">Time</p>
-            <h4>Veja Meu Gol:</h4>
-            <div id="lista-links-cliente" style="margin-top: 10px;"></div>
-        </div>
-    </div>
-
-    <div id="modal-links-admin" class="modal">
-        <div class="modal-content">
-            <span class="close-modal" onclick="fecharModal('modal-links-admin')">&times;</span>
-            <h3>Gerenciar Links do Vídeo</h3>
-            <p id="links-admin-jogador" style="color:var(--accent); margin-bottom:20px;"></p>
-            <input type="hidden" id="links-jogador-id">
-            <div class="form-group" style="display:flex; gap:8px; align-items:flex-end;">
-                <div style="flex-grow:1;">
-                    <label>Link Externo</label>
-                    <input type="url" id="novo-link-url" placeholder="https://...">
-                </div>
-                <button class="btn" style="height:40px;" onclick="adicionarLinkExterno()"><i class="fa-solid fa-plus"></i></button>
-            </div>
-            <div id="lista-links-admin" style="margin-top:10px;"></div>
-        </div>
-    </div>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-
-        // ==========================================
-        // COLE SUAS CREDENCIAIS DO FIREBASE AQUI:
-        // ==========================================
+<script>
+        // CONFIGURAÇÃO ATUALIZADA COM O SEU NOVO BANCO (RANKING-GOLS)
         const firebaseConfig = {
-            apiKey: "SUA_API_KEY",
-            authDomain: "SEU_AUTH_DOMAIN",
-            projectId: "SEU_PROJECT_ID",
-            storageBucket: "SEU_STORAGE_BUCKET",
-            messagingSenderId: "SEU_MESSAGING_SENDER_ID",
-            appId: "SEU_APP_ID"
+            apiKey: "AIzaSyCMivYBxCSnu2HvS6wD7aWJOuK7z9f7G40",
+            authDomain: "ranking-gols.firebaseapp.com",
+            databaseURL: "https://ranking-gols-default-rtdb.firebaseio.com",
+            projectId: "ranking-gols",
+            storageBucket: "ranking-gols.firebasestorage.app",
+            messagingSenderId: "866441770590",
+            appId: "1:866441770590:web:7cb5aab9a22aa2782466cf",
+            measurementId: "G-N0HSRYLP3G"
         };
-
-        // Inicializar Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-
-        let dadosJogadores = [];
-        let usuarioLogado = null;
-
-        // Escuta o banco de dados em TEMPO REAL (Atualiza o cliente sozinho)
-        const q = query(collection(db, "jogadores"), orderBy("gols", "desc"));
-        onSnapshot(q, (snapshot) => {
-            dadosJogadores = [];
-            snapshot.forEach((doc) => {
-                dadosJogadores.push({ id: doc.id, ...doc.data() });
-            });
-            renderizarRankingCliente();
-            if(usuarioLogado) renderizarPainelAdmin();
-        });
-
-        // Monitor de Autenticação do Admin
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                usuarioLogado = user;
-                document.getElementById('btnAlternarJanela').innerHTML = `<i class="fa-solid fa-chart-simple"></i> Ver Ranking`;
-                document.getElementById('btnAlternarJanela').onclick = () => alternarVisualizacao('secao-cliente');
-                alternarVisualizacao('secao-admin');
-            } else {
-                usuarioLogado = null;
-                fazerLogoutInterface();
-            }
-        });
-
-        // FUNÇÕES INTERNAS ATRIBUÍDAS AO ESCOPO GLOBAL PARA COMPATIBILIDADE
-        window.abrirLoginAdmin = () => usuarioLogado ? alternarVisualizacao('secao-admin') : abrirModal('modal-login');
         
-        window.autenticarAdmin = async () => {
-            const email = document.getElementById('login-user').value;
-            const pass = document.getElementById('login-pass').value;
-            try {
-                await signInWithEmailAndPassword(auth, email, pass);
-                fecharModal('modal-login');
-            } catch (error) {
-                alert("Erro ao entrar: Verifique o e-mail e senha cadastrados no Authentication do Firebase.");
+        // Inicialização padrão do Firebase v8
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const auth = firebase.auth();
+        let dadosUsuarioLogado = null;
+        let rivalAleatorioSelecionado = null;
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                database.ref('/usuarios/' + user.uid).once('value').then(snapshot => {
+                    dadosUsuarioLogado = snapshot.val();
+                    if(!dadosUsuarioLogado) {
+                        // Correção: Adicionado o campo "celular" padrão para evitar erros no agendamento automático
+                        dadosUsuarioLogado = {
+                            responsavel: user.email.split('@')[0],
+                            nomeTime: "Time Temporário",
+                            urlEscudo: "https://via.placeholder.com/250?text=TIME",
+                            anoFundacao: "2026",
+                            sobreTime: "Criado automaticamente.",
+                            celular: "(00) 00000-0000",
+                            uid: user.uid
+                        };
+                        database.ref('/usuarios/' + user.uid).set(dadosUsuarioLogado);
+                    }
+
+                    document.getElementById('userNome').innerText = dadosUsuarioLogado.responsavel;
+                    document.getElementById('userTime').innerText = dadosUsuarioLogado.nomeTime;
+                    mostrarAba('Agendamento');
+                    carregarTimesCadastrados();
+
+                }).catch(err => {
+                    alert("Erro ao acessar o Banco: " + err.message);
+                    mostrarAba('Login');
+                });
+            } else { 
+                mostrarAba('Login');
             }
-        };
+        });
 
-        window.fazerLogout = () => signOut(auth);
-
-        function fazerLogoutInterface() {
-            document.getElementById('btnAlternarJanela').innerHTML = `<i class="fa-solid fa-lock"></i> Admin`;
-            document.getElementById('btnAlternarJanela').onclick = () => abrirLoginAdmin();
-            alternarVisualizacao('secao-cliente');
+        function mostrarAba(aba) {
+            document.getElementById('secaoLogin').style.display = aba === 'Login' ? 'block' : 'none';
+            document.getElementById('secaoCadastro').style.display = aba === 'Cadastro' ? 'block' : 'none';
+            document.getElementById('secaoAgendamento').style.display = aba === 'Agendamento' ? 'block' : 'none';
+            document.getElementById('modalConfirmacao').style.display = 'none';
         }
 
-        function renderizarRankingCliente() {
-            const container = document.getElementById('ranking-container');
-            container.innerHTML = "";
-            dadosJogadores.forEach((jogador, index) => {
-                const fotoHTML = jogador.foto ? `<img src="${jogador.foto}">` : `<i class="fa-solid fa-user"></i>`;
-                const row = document.createElement('div');
-                row.className = 'jogador-row';
-                row.onclick = () => abrirModalGolsCliente(jogador.id);
-                row.innerHTML = `
-                    <div class="posicao">${index + 1}º</div>
-                    <div class="foto-container">${fotoHTML}</div>
-                    <div class="dados">
-                        <div class="nome-jogador">${jogador.nome}</div>
-                        <div class="equipe-jogador">${jogador.equipe}</div>
-                    </div>
-                    <div class="gols-contador"><span class="gols-numero">${jogador.gols}</span><span class="gols-label">Gols</span></div>
-                `;
-                container.appendChild(row);
+        function mudarSubAba(subAba) {
+            document.getElementById('subAbaAgendar').style.display = subAba === 'agendar' ? 'block' : 'none';
+            document.getElementById('subAbaTimes').style.display = subAba === 'times' ? 'block' : 'none';
+            
+            document.getElementById('btnAbaAgendar').classList.toggle('ativa', subAba === 'agendar');
+            document.getElementById('btnAbaTimes').classList.toggle('ativa', subAba === 'times');
+            if(subAba === 'times') {
+                carregarTimesCadastrados();
+            }
+        }
+
+        let listaGlobalTimes = {};
+        function carregarTimesCadastrados() {
+            const container = document.getElementById('listaTimesCadastrados');
+            container.innerHTML = `<p style="text-align:center; color:#c5c6c7;">Carregando equipes...</p>`;
+            
+            database.ref('/usuarios').once('value').then(snapshot => {
+                container.innerHTML = ""; 
+                listaGlobalTimes = {};
+                
+                if(!snapshot.exists()) {
+                    container.innerHTML = `<p style="text-align:center; color:#a5a6a7;">Nenhum time registrado até o momento.</p>`;
+                    return;
+                }
+
+                snapshot.forEach(childSnapshot => {
+                    const timeData = childSnapshot.val();
+                    const key = childSnapshot.key;
+                    
+                    if (timeData.nomeTime) {
+                        listaGlobalTimes[key] = timeData;
+                        const cardHtml = `
+                            <div class="card-time-lista" onclick="verDetalhesTime('${key}')">
+                                <img src="${timeData.urlEscudo || 'https://via.placeholder.com/250?text=TIME'}" class="escudo-lista-time" onerror="this.src='https://via.placeholder.com/250?text=⚽'">
+                                <div class="info-lista-time">
+                                    <h4>${timeData.nomeTime}</h4>
+                                    <p>📅 <strong>Fundação:</strong> ${timeData.anoFundacao || 'Não Informada'}</p>
+                                    <p>👤 <strong>Resp:</strong> ${timeData.responsavel || 'Desconhecido'}</p>
+                                    <p style="font-style: italic; color:#85929E; margin-top:4px; font-size:0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 320px;">
+                                        "${timeData.sobreTime || 'Sem descrição.'}"
+                                    </p>
+                                </div>
+                            </div>
+                        `;
+                        container.innerHTML += cardHtml;
+                    }
+                });
+            }).catch(err => {
+                container.innerHTML = `<p style="text-align:center; color:#ff2222;">Erro ao carregar dados: ${err.message}</p>`;
             });
         }
 
-        function renderizarPainelAdmin() {
-            const container = document.getElementById('admin-lista-jogadores');
-            container.innerHTML = "";
-            dadosJogadores.forEach((jogador, index) => {
-                const fotoHTML = jogador.foto ? `<img src="${jogador.foto}">` : `<i class="fa-solid fa-user"></i>`;
-                const card = document.createElement('div');
-                card.className = 'card-admin';
-                card.innerHTML = `
-                    <div class="grid-admin-jogador">
-                        <div style="display:flex; align-items:center; gap:12px;">
-                            <span style="color:var(--accent); font-weight:bold;">#${index+1}</span>
-                            <div class="foto-container" style="width:40px; height:40px;">${fotoHTML}</div>
-                            <div><strong>${jogador.nome}</strong><span style="display:block;font-size:0.8rem;color:var(--texto-mutado);">${jogador.equipe}</span></div>
-                        </div>
-                        <div style="display:flex; align-items:center; gap:15px;">
-                            <div class="controles-gols">
-                                <button class="btn-gol" onclick="modificarGolsDB('${jogador.id}', ${jogador.gols}, -1)"><i class="fa-solid fa-minus"></i></button>
-                                <span style="font-weight:bold; min-width:20px; text-align:center;">${jogador.gols}</span>
-                                <button class="btn-gol" onclick="modificarGolsDB('${jogador.id}', ${jogador.gols}, 1)"><i class="fa-solid fa-plus"></i></button>
-                            </div>
-                            <div style="display:flex; gap:5px;">
-                                <button class="btn btn-secundario" style="padding:8px;" onclick="abrirModalJogador('${jogador.id}')"><i class="fa-solid fa-pen"></i></button>
-                                <button class="btn btn-secundario" style="padding:8px; color:var(--accent);" onclick="abrirGerenciarLinksAdmin('${jogador.id}')"><i class="fa-solid fa-video"></i> (${jogador.links ? jogador.links.length : 0})</button>
-                                <button class="btn btn-danger" style="padding:8px;" onclick="excluirJogadorDB('${jogador.id}')"><i class="fa-solid fa-trash"></i></button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
+        function verDetalhesTime(key) {
+            const time = listaGlobalTimes[key];
+            if(!time) return;
+
+            document.getElementById('detalheEscudo').src = time.urlEscudo || 'https://via.placeholder.com/250?text=TIME';
+            document.getElementById('detalheNome').innerText = time.nomeTime;
+            document.getElementById('detalheAno').innerText = time.anoFundacao || 'Não informado';
+            document.getElementById('detalheResp').innerText = time.responsavel || 'Desconhecido';
+            document.getElementById('detalheSobre').innerText = time.sobreTime || 'Sem descrição cadastrada.';
+            
+            const numCelular = time.celular ? time.celular.replace(/\D/g, '') : '';
+            document.getElementById('detalheWhats').href = `https://wa.me/55${numCelular}?text=Olá,%20vi%20seu%20time%20no%20Arena%20Olho%20no%20Lance!%20Bora%20marcar%20um%20jogo?`;
+            document.getElementById('detalhesTimeSelecionado').style.display = 'block';
+            document.getElementById('detalhesTimeSelecionado').scrollIntoView({ behavior: 'smooth' });
         }
 
-        window.modificarGolsDB = async (id, golsAtuais, valor) => {
-            const novaQtd = Math.max(0, golsAtuais + valor);
-            await updateDoc(doc(db, "jogadores", id), { gols: novaQtd });
-        };
+        function atualizarOpcoesRival() {
+            if(document.querySelector('input[name="financeiro"]:checked').value === "Rachar") {
+                document.querySelector('input[name="tipoRival"][value="Procurar"]').checked = true;
+                atualizarAbasRival();
+            }
+        }
 
-        window.excluirJogadorDB = async (id) => {
-            if(confirm("Deseja mesmo remover do ranking?")) await deleteDoc(doc(db, "jogadores", id));
-        };
-
-        window.salvarJogador = async () => {
-            const idEdit = document.getElementById('jogador-id-edit').value;
-            const nome = document.getElementById('form-nome').value;
-            const equipe = document.getElementById('form-equipe').value;
-            const foto = document.getElementById('form-foto').value;
-
-            if(!nome || !equipe) return alert("Campos obrigatórios!");
-
-            if(idEdit) {
-                await updateDoc(doc(db, "jogadores", idEdit), { nome, equipe, foto });
+        function atualizarAbasRival() {
+            const tipoRival = document.querySelector('input[name="tipoRival"]:checked').value;
+            if(document.querySelector('input[name="financeiro"]:checked').value === "Rachar" && tipoRival === "Conhecido") {
+                alert("Para rachar o valor pelo site, selecione 'Procurar adversário no site'.");
+                document.querySelector('input[name="tipoRival"][value="Procurar"]').checked = true;
+                document.getElementById('campoRivalFixo').style.display = 'none';
+                document.getElementById('campoRivalAleatorio').style.display = 'block';
+                return;
+            }
+            
+            if (tipoRival === 'Conhecido') {
+                document.getElementById('campoRivalFixo').style.display = 'block';
+                document.getElementById('campoRivalAleatorio').style.display = 'none';
+                rivalAleatorioSelecionado = null;
             } else {
-                const gols = parseInt(document.getElementById('form-gols').value) || 0;
-                await addDoc(collection(db, "jogadores"), { nome, equipe, foto, gols, links: [] });
+                // Correção: Ajustado o erro de sintaxe do .style.style.display
+                document.getElementById('campoRivalFixo').style.display = 'none';
+                document.getElementById('campoRivalAleatorio').style.display = 'block';
             }
-            fecharModal('modal-jogador');
-        };
+        }
 
-        window.abrirGerenciarLinksAdmin = (id) => {
-            const j = dadosJogadores.find(item => item.id === id);
-            if(!j) return;
-            document.getElementById('links-jogador-id').value = j.id;
-            document.getElementById('links-admin-jogador').innerText = j.nome;
-            document.getElementById('novo-link-url').value = "";
-            atualizarListaLinksAdmin(j);
-            abrirModal('modal-links-admin');
-        };
+        function buscarRivalAleatorio() {
+            database.ref('/usuarios').once('value').then(snapshot => {
+                let timesDisponiveis = [];
+                
+                snapshot.forEach(child => {
+                    const t = child.val();
+                    if (t.nomeTime && t.uid !== dadosUsuarioLogado.uid) {
+                        timesDisponiveis.push(t);
+                    }
+                });
 
-        function atualizarListaLinksAdmin(jogador) {
-            const container = document.getElementById('lista-links-admin');
-            container.innerHTML = "";
-            const links = jogador.links || [];
-            links.forEach((link, idx) => {
-                const item = document.createElement('div');
-                item.className = 'link-item';
-                item.innerHTML = `<a href="${link}" target="_blank">${link}</a><button class="btn-gol" onclick="removerLinkDB('${jogador.id}', ${idx})"><i class="fa-solid fa-trash" style="color:var(--danger)"></i></button>`;
-                container.appendChild(item);
+                if (timesDisponiveis.length === 0) {
+                    alert("Ainda não há outros times cadastrados no sistema para buscar de forma aleatória.");
+                    return;
+                }
+
+                const indiceSorteado = Math.floor(Math.random() * timesDisponiveis.length);
+                rivalAleatorioSelecionado = timesDisponiveis[indiceSorteado];
+                alert(`🎯 Rival Encontrado com Sucesso: ${rivalAleatorioSelecionado.nomeTime}! Agora escolha o dia/horário e clique em Finalizar Pedido.`);
+            }).catch(err => alert("Erro ao sortear rival: " + err.message));
+        }
+
+        function cadastrar() {
+            const email = document.getElementById('cadEmail').value.trim();
+            const BlackPass = document.getElementById('cadSenha').value;
+            const nome = document.getElementById('cadNome').value.trim(); 
+            const celular = document.getElementById('cadCelular').value.trim();
+            const time = document.getElementById('cadTime').value.trim(); 
+            const escudoInput = document.getElementById('cadEscudo');
+            const ano = document.getElementById('cadAno').value.trim(); 
+            const sobre = document.getElementById('cadSobre').value.trim();
+            
+            if(!email || !BlackPass || !nome || !celular || !time || !ano || !sobre) {
+                return alert("Por favor, preencha todos os campos obrigatórios!");
+            }
+
+            const salvarUsuarioComEscudo = (escudoBase64) => {
+                auth.createUserWithEmailAndPassword(email, BlackPass).then(cred => {
+                    return database.ref('/usuarios/' + cred.user.uid).set({ 
+                        responsavel: nome, celular: celular, nomeTime: time, 
+                        urlEscudo: escudoBase64, 
+                        anoFundacao: ano, sobreTime: sobre, uid: cred.user.uid
+                    });
+                }).then(() => {
+                    alert("Conta e time criados com sucesso!");
+                    carregarTimesCadastrados();
+                }).catch(err => alert("Erro no cadastro: " + err.message));
+            };
+
+            if (escudoInput.files && escudoInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    salvarUsuarioComEscudo(e.target.result);
+                };
+                reader.readAsDataURL(escudoInput.files[0]);
+            } else {
+                salvarUsuarioComEscudo("https://via.placeholder.com/250?text=TIME");
+            }
+        }
+
+        function logar() { 
+            const email = document.getElementById('loginEmail').value.trim();
+            const senha = document.getElementById('loginSenha').value;
+            if(!email || !senha) return alert("Por favor, informe o e-mail e a senha!");
+            auth.signInWithEmailAndPassword(email, senha).catch(err => {
+                alert("Erro ao fazer login: " + err.message);
             });
         }
 
-        window.adicionarLinkExterno = async () => {
-            const id = document.getElementById('links-jogador-id').value;
-            const url = document.getElementById('novo-link-url').value;
-            if(!url) return;
-            const j = dadosJogadores.find(item => item.id === id);
-            const novosLinks = j.links || [];
-            novosLinks.push(url);
-            await updateDoc(doc(db, "jogadores", id), { links: novosLinks });
-            abrirGerenciarLinksAdmin(id);
-        };
-
-        window.removerLinkDB = async (id, index) => {
-            const j = dadosJogadores.find(item => item.id === id);
-            const novosLinks = j.links || [];
-            novosLinks.splice(index, 1);
-            await updateDoc(doc(db, "jogadores", id), { links: novosLinks });
-            abrirGerenciarLinksAdmin(id);
-        };
-
-        function abrirModalGolsCliente(id) {
-            const j = dadosJogadores.find(item => item.id === id);
-            if(!j) return;
-            document.getElementById('video-cliente-nome').innerText = j.nome;
-            document.getElementById('video-cliente-equipe').innerText = j.equipe;
-            const container = document.getElementById('lista-links-cliente');
-            container.innerHTML = "";
-            const links = j.links || [];
-            if(links.length === 0) container.innerHTML = "<p style='color:var(--texto-mutado)'>Nenhum vídeo salvo.</p>";
-            links.forEach((link, idx) => {
-                const item = document.createElement('div');
-                item.className = 'link-item';
-                item.innerHTML = `<a href="${link}" target="_blank"><i class="fa-solid fa-play"></i> Assistir ao gol nº ${idx+1}</a>`;
-                container.appendChild(item);
-            });
-            abrirModal('modal-videos-cliente');
+        function deslogar() { 
+            auth.signOut().then(() => { mostrarAba('Login'); });
         }
 
-        function alternarVisualizacao(secaoId) {
-            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
-            document.getElementById(secaoId).classList.add('active');
+        function processarAgendamento() {
+            const data = document.getElementById('dataJogo').value;
+            const horario = document.getElementById('horarioJogo').value;
+            const financeiro = document.querySelector('input[name="financeiro"]:checked').value;
+            const tipoRival = document.querySelector('input[name="tipoRival"]:checked').value;
+            if (!data || !horario) return alert("Escolha o dia e o horário!");
+            document.getElementById('areaContatoRival').style.display = 'none';
+
+            if (tipoRival === "Conhecido") {
+                const rivalNome = document.getElementById('rivalNome').value || "Adversário";
+                const rivalEscudo = "https://via.placeholder.com/250?text=RIVAL";
+                salvarNoFirebase(data, horario, dadosUsuarioLogado.nomeTime, dadosUsuarioLogado.urlEscudo, rivalNome, rivalEscudo, "Pendente", financeiro, dadosUsuarioLogado, null);
+            } 
+            else if (tipoRival === "Procurar" && rivalAleatorioSelecionado) {
+                salvarNoFirebase(data, horario, dadosUsuarioLogado.nomeTime, dadosUsuarioLogado.urlEscudo, rivalAleatorioSelecionado.nomeTime, rivalAleatorioSelecionado.urlEscudo, "Pendente", financeiro, dadosUsuarioLogado, null);
+                document.getElementById('modalTitulo').innerText = "💥 CONFRONTO AGENDADO COM RIVAL!";
+                document.getElementById('modalTexto').innerText = "Confronto direto criado! Veja abaixo a ficha técnica do seu oponente:";
+                document.getElementById('rivalPerfilEscudo').src = rivalAleatorioSelecionado.urlEscudo || "https://via.placeholder.com/250?text=RIVAL";
+                document.getElementById('rivalPerfilTime').innerText = rivalAleatorioSelecionado.nomeTime;
+                document.getElementById('rivalPerfilAno').innerText = rivalAleatorioSelecionado.anoFundacao || "Não Informado";
+                document.getElementById('rivalPerfilSobre').innerText = rivalAleatorioSelecionado.sobreTime || "Sem descrição.";
+                document.getElementById('rivalRespNome').innerText = rivalAleatorioSelecionado.responsavel;
+                document.getElementById('rivalRespCelular').innerText = rivalAleatorioSelecionado.celular || "Não Informado";
+                document.getElementById('areaContatoRival').style.display = 'block';
+            } 
+            else {
+                database.ref('/agendamentos').orderByChild('data').equalTo(data).once('value').then(snapshot => {
+                    let matchID = null; let matchJogo = null;
+        
+                    snapshot.forEach(child => {
+                        const jogo = child.val();
+                        if (jogo.horario === horario && jogo.status === "Aguardando Rival" && jogo.modoFinanceiro === financeiro && jogo.nomeCasa !== dadosUsuarioLogado.nomeTime) {
+                            matchID = child.key; matchJogo = child.val();
+                        }
+                    });
+
+                    if (matchJogo) {
+                        database.ref('/agendamentos/' + matchID).update({
+                            nomeVisitante: dadosUsuarioLogado.nomeTime,
+                            urlEscudoVisitante: dadosUsuarioLogado.urlEscudo,
+                            responsavelVisitante: dadosUsuarioLogado.responsavel,
+                            celularVisitante: dadosUsuarioLogado.celular,
+                            uidVisitante: dadosUsuarioLogado.uid,
+                            status: "Pendente" 
+                        }).then(() => {
+                            document.getElementById('modalTitulo').innerText = "💥 CONFRONTO ENCONTRADO!";
+                            document.getElementById('modalTexto').innerText = "Jogo casado! Analise o perfil do seu adversário abaixo, combine os uniformes e chame a quadra para liberar!";
+                            document.getElementById('rivalPerfilEscudo').src = matchJogo.escudoCasaPerfil || matchJogo.urlEscudoCasa;
+                            document.getElementById('rivalPerfilTime').innerText = matchJogo.nomeCasa;
+                            document.getElementById('rivalPerfilAno').innerText = matchJogo.anoCasaPerfil || "Não Informado";
+                            document.getElementById('rivalPerfilSobre').innerText = matchJogo.sobreCasaPerfil || "Sem descrição.";
+                            document.getElementById('rivalRespNome').innerText = matchJogo.responsavelCasa;
+                            document.getElementById('rivalRespCelular').innerText = matchJogo.celularCasa;
+                            
+                            document.getElementById('areaContatoRival').style.display = 'block';
+                            document.getElementById('modalConfirmacao').style.display = 'block';
+                        });
+                    } else {
+                        salvarNoFirebase(data, horario, dadosUsuarioLogado.nomeTime, dadosUsuarioLogado.urlEscudo, "Procurando...", "https://via.placeholder.com/250?text=?", "Aguardando Rival", financeiro, dadosUsuarioLogado, true);
+                    }
+                });
+            }
+        }
+
+        function salvarNoFirebase(data, horario, casa, escudoCasa, visitante, escudoVisitante, status, financeiro, donoDados, colocarFila) {
+            const jogoData = {
+                data: data, horario: horario,
+                nomeCasa: casa, urlEscudoCasa: escudoCasa,
+                nomeVisitante: visitante, urlEscudoVisitante: escudoVisitante,
+                responsavelCasa: donoDados.responsavel, celularCasa: donoDados.celular,
+                uidCasa: donoDados.uid,
+                anoCasaPerfil: donoDados.anoFundacao || "",
+                sobreCasaPerfil: donoDados.sobreTime || "",
+                escudoCasaPerfil: donoDados.urlEscudo || "",
+                status: status, modoFinanceiro: financeiro
+            };
+            database.ref('/agendamentos').push().set(jogoData).then(() => {
+                if (status === "Pendente" && !colocarFila) {
+                    document.getElementById('modalConfirmacao').style.display = 'block';
+                } else {
+                    document.getElementById('modalTitulo').innerText = "Pedido Enviado!";
+                    if (colocarFila) {
+                        document.getElementById('modalTexto').innerText = "Você está na lista de espera. O seu perfil de time foi publicado neste horário. Quando um rival aceitar, ele verá seus dados!";
+                    } else {
+                        document.getElementById('modalTexto').innerText = "Agendamento pré-registrado. Clique abaixo para mandar mensagem para a administração!";
+                    }
+                    document.getElementById('modalConfirmacao').style.display = 'block';
+                }
+                rivalAleatorioSelecionado = null;
+            });
         }
     </script>
-
-    <script>
-        // Funções estruturais de controle de tela (Modais)
-        function abrirModal(id) { document.getElementById(id).style.display = 'flex'; }
-        function fecharModal(id) { document.getElementById(id).style.display = 'none'; }
-        function abrirModalJogador(id = null) {
-            if(id) {
-                document.getElementById('modal-jogador-titulo').innerText = "Editar Jogador";
-                document.getElementById('jogador-id-edit').value = id;
-                document.getElementById('grupo-gols-inicial').style.display = 'none';
-            } else {
-                document.getElementById('modal-jogador-titulo').innerText = "Novo Artilheiro";
-                document.getElementById('jogador-id-edit').value = "";
-                document.getElementById('form-nome').value = "";
-                document.getElementById('form-equipe').value = "";
-                document.getElementById('form-foto').value = "";
-                document.getElementById('form-gols').value = "0";
-                document.getElementById('grupo-gols-inicial').style.display = 'block';
-            }
-            abrirModal('modal-jogador');
-        }
-    </script>
-</body>
-</html>
