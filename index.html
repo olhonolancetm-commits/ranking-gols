@@ -3,484 +3,421 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arena Olho no Lance - Perfil e Matchmaking</title>
+    <title>Artilheiro da Temporada | Olho no Lance</title>
+    
+    <!-- Firebase v8 -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
+    <!-- Google Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
-        body { font-family: 'Arial', sans-serif; background-color: #111a24; color: #fff; margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 550px; background-color: #1f2833; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        h2, h3 { text-align: center; color: #00f3ff; margin-bottom: 20px; }
-        label { display: block; margin: 16px 0 6px; font-weight: bold; }
-        input, select, textarea { width: 100%; padding: 12px; margin-bottom: 5px; border-radius: 5px; border: 1px solid #45f3ff; background-color: #0b1118; color: #fff; box-sizing: border-box; }
-        input:focus, select:focus, textarea:focus { outline: none; border-color: #00ff88; box-shadow: 0 0 8px rgba(0,255,136,0.5); }
-        .btn { width: 100%; padding: 14px; background: linear-gradient(45deg, #00f3ff, #00ff88); border: none; color: #000; font-size: 16px; font-weight: bold; cursor: pointer; border-radius: 5px; margin-top: 15px; transition: 0.3s; }
-        .btn:hover { background: linear-gradient(45deg, #00ff88, #00f3ff); box-shadow: 0 0 12px rgba(0,243,255,0.6); transform: scale(1.01); }
-        .btn-danger { background: linear-gradient(45deg, #ff416c, #ff4b2b); color: #fff; margin-top: 25px; }
-        .btn-danger:hover { background: linear-gradient(45deg, #ff4b2b, #ff416c); box-shadow: 0 0 12px rgba(255,65,108,0.6); }
-        .btn-secundario { background: #455a64; color: white; margin-top: 10px; }
-        .btn-secundario:hover { background: #37474f; box-shadow: none; }
-        .link-alternar { text-align: center; margin-top: 20px; color: #c5c6c7; font-size: 14px; }
-        .link-alternar span { color: #00ff88; cursor: pointer; font-weight: bold; text-decoration: underline; }
+        :root {
+            --green-field: #2ecc71;
+            --green-dark: #1b3d1b;
+            --stadium-bg: #0b0c10;
+            --accent: #bfff00;
+            --white: #ffffff;
+            --glass: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            margin: 0; font-family: 'Rajdhani', sans-serif;
+            background-color: var(--stadium-bg); color: var(--white);
+            background-image: radial-gradient(circle at top, #1f402b 0%, #0b0c10 100%);
+            min-height: 100vh; overflow-x: hidden;
+        }
+
+        /* HEADER */
+        header {
+            text-align: center; padding: 40px 20px;
+            border-bottom: 4px solid var(--accent);
+            background: rgba(0,0,0,0.5);
+        }
+        header h1 { 
+            font-family: 'Orbitron', sans-serif; font-size: 2.5rem; 
+            margin: 0; color: var(--accent); text-transform: uppercase;
+            text-shadow: 0 0 15px rgba(191, 255, 0, 0.5);
+        }
+        header p { margin: 5px 0 0; opacity: 0.8; letter-spacing: 2px; }
+
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+
+        /* NAVEGAÇÃO / LOGIN BAR */
+        .admin-trigger {
+            position: fixed; top: 10px; right: 10px; background: var(--glass);
+            border: 1px solid var(--accent); color: var(--accent);
+            padding: 8px 15px; border-radius: 20px; cursor: pointer; font-weight: bold;
+            transition: 0.3s; z-index: 100; font-size: 0.8rem;
+        }
+        .admin-trigger:hover { background: var(--accent); color: #000; }
+
+        /* RANKING LIST (CLIENTE) */
+        .ranking-list { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+        .player-card {
+            display: flex; align-items: center; background: var(--glass);
+            padding: 15px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.05);
+            cursor: pointer; transition: 0.3s; position: relative; overflow: hidden;
+        }
+        .player-card:hover { transform: scale(1.02); background: rgba(255,255,255,0.15); border-color: var(--accent); }
         
-        .abas-container { display: flex; justify-content: space-around; margin-bottom: 25px; border-bottom: 2px solid #0b1118; }
-        .aba-btn { background: none; border: none; color: #85929E; padding: 12px 20px; font-size: 15px; font-weight: bold; cursor: pointer; transition: 0.3s; width: 50%; text-align: center; }
-        .aba-btn:hover { color: #00f3ff; }
-        .aba-btn.ativa { color: #00f3ff; border-bottom: 3px solid #00f3ff; }
-
-        .perfil-resumo { background: #0b1118; padding: 15px; border-radius: 8px; border-left: 4px solid #00ff88; margin-bottom: 25px; font-size: 0.95rem; line-height: 1.5; }
-        .radio-group { display: flex; gap: 15px; margin: 10px 0 15px; }
-        .radio-option { display: flex; align-items: center; gap: 6px; cursor: pointer; }
-        .radio-option input { width: auto; margin: 0; cursor: pointer; }
-
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
-        .modal-content { background-color: #1f2833; padding: 30px; border-radius: 12px; width: 100%; max-width: 480px; border: 2px solid #00f3ff; box-shadow: 0 0 25px rgba(0,243,255,0.3); animation: popup 0.3s ease-out; color: #fff; }
-        @keyframes popup { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .pos { width: 50px; font-family: 'Orbitron'; font-size: 1.5rem; color: var(--accent); text-align: center; }
+        .photo-frame { width: 65px; height: 65px; border-radius: 50%; border: 3px solid var(--green-field); overflow: hidden; margin: 0 15px; background: #222; }
+        .photo-frame img { width: 100%; height: 100%; object-fit: cover; }
         
-        .lista-times-grid { display: flex; flex-direction: column; gap: 12px; max-height: 400px; overflow-y: auto; padding-right: 5px; margin-top: 10px; }
-        .lista-times-grid::-webkit-scrollbar { width: 6px; }
-        .lista-times-grid::-webkit-scrollbar-thumb { background-color: #45f3ff; border-radius: 4px; }
-        .card-time-lista { display: flex; align-items: center; background: #0b1118; padding: 12px; border-radius: 8px; border: 1px solid #2c3b4e; cursor: pointer; transition: 0.2s; }
-        .card-time-lista:hover { border-color: #00ff88; background: #121b26; transform: translateY(-2px); }
-        .escudo-lista-time { width: 55px; height: 55px; border-radius: 50%; object-fit: cover; margin-right: 15px; border: 2px solid #45f3ff; background: #fff; }
-        .info-lista-time h4 { margin: 0 0 4px 0; color: #fff; font-size: 1.05rem; }
-        .info-lista-time p { margin: 2px 0; font-size: 0.82rem; color: #bdc3c7; }
+        .info { flex: 1; }
+        .info h3 { margin: 0; font-size: 1.4rem; text-transform: uppercase; }
+        .info p { margin: 0; opacity: 0.6; font-size: 0.9rem; }
+        
+        .goals-count { 
+            text-align: center; padding: 10px 20px; background: var(--green-field); 
+            color: #000; border-radius: 10px; font-family: 'Orbitron'; min-width: 60px;
+        }
+        .goals-count span { display: block; font-size: 0.7rem; font-weight: bold; }
 
-        .perfil-detalhes-bloco { background: #0b1118; border: 1px solid #00f3ff; border-radius: 10px; padding: 20px; margin-top: 20px; display: none; animation: fadeIn 0.4s ease; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .topo-detalhe { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; border-bottom: 1px solid #233142; padding-bottom: 15px; }
-        .escudo-detalhe { width: 75px; height: 75px; border-radius: 50%; object-fit: cover; border: 3px solid #00ff88; background: #fff; }
-        .btn-whats { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px; background-color: #25D366; color: #fff; text-decoration: none; font-weight: bold; border-radius: 5px; text-align: center; margin-top: 15px; transition: 0.3s; }
-        .btn-whats:hover { background-color: #20ba5a; box-shadow: 0 0 10px rgba(37,211,102,0.5); }
+        /* ADMIN PANEL */
+        .admin-panel { 
+            display: none; background: #fff; color: #333; border-radius: 20px; 
+            padding: 30px; margin-top: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        .admin-panel h2 { margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
 
-        .box-perfil-adversario { background: #16222f; border: 1px dashed #ff416c; border-radius: 8px; padding: 15px; margin-top: 15px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-add { background: var(--green-field); color: #fff; width: 100%; font-size: 1.1rem; }
+        .btn-sm { padding: 5px 10px; font-size: 0.8rem; }
+        .btn-plus { background: var(--green-field); color: white; }
+        .btn-minus { background: #e74c3c; color: white; }
+        .btn-del { background: #333; color: white; }
+
+        /* TABELA ADMIN */
+        .admin-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .admin-table th, .admin-table td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+        .admin-table img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+
+        /* MODAL */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; padding: 20px; }
+        .modal-content { background: var(--stadium-bg); padding: 30px; border-radius: 20px; border: 2px solid var(--accent); width: 100%; max-width: 500px; position: relative; }
+        .close-modal { position: absolute; top: 15px; right: 15px; font-size: 1.5rem; cursor: pointer; }
+        
+        .video-link { 
+            display: block; background: var(--glass); padding: 12px; margin: 10px 0; 
+            border-radius: 10px; color: var(--accent); text-decoration: none; border: 1px solid rgba(255,255,255,0.1);
+            transition: 0.3s;
+        }
+        .video-link:hover { background: var(--accent); color: #000; }
+
+        @media (max-width: 600px) {
+            header h1 { font-size: 1.5rem; }
+            .pos { font-size: 1.1rem; width: 30px; }
+            .photo-frame { width: 50px; height: 50px; }
+            .info h3 { font-size: 1.1rem; }
+            .goals-count { padding: 5px 10px; font-size: 1.2rem; }
+        }
+
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
+    <button class="admin-trigger" id="btnAdminAccess" onclick="authAdmin()">
+        <i class="fas fa-lock"></i> ÁREA PRIVADA
+    </button>
+
+    <header>
+        <h1>Artilheiro da Temporada</h1>
+        <p>OFERECIMENTO: OLHO NO LANCE</p>
+    </header>
+
     <div class="container">
-        <div id="secaoLogin">
-            <h2>Arena Olho no Lance</h2>
-            <h3>Acessar Painel</h3>
-            <label>E-mail da Equipe</label>
-            <input type="email" id="loginEmail" placeholder="exemplo@time.com">
-            <label>Senha de Acesso</label>
-            <input type="password" id="loginSenha" placeholder="******">
-            <button class="btn" onclick="logar()">Entrar no Sistema</button>
-            <div class="link-alternar">Ainda não tem cadastro? <span onclick="mostrarAba('Cadastro')">Cadastre seu Time aqui</span></div>
+        
+        <!-- PAINEL CLIENTE (RANKING) -->
+        <div id="painelCliente">
+            <div class="ranking-list" id="rankingList">
+                <!-- Jogadores injetados via JS -->
+                <p style="text-align: center; opacity: 0.5;">Carregando artilharia...</p>
+            </div>
         </div>
 
-        <div id="secaoCadastro" style="display:none;">
-            <h2>Configure sua Equipe</h2>
-            <label>E-mail do Time (Login)</label>
-            <input type="email" id="cadEmail" placeholder="exemplo@time.com">
-            <label>Senha</label>
-            <input type="password" id="cadSenha" placeholder="Mínimo 6 dígitos">
-            <label>Nome do Responsável</label>
-            <input type="text" id="cadNome" placeholder="Seu nome completo">
-            <label>WhatsApp do Responsável</label>
-            <input type="text" id="cadCelular" placeholder="(00) 00000-0000">
-            <label>Nome Oficial do Time</label>
-            <input type="text" id="cadTime" placeholder="Ex: Real Madrid FC">
-            <label>Ano de Fundação</label>
-            <input type="number" id="cadAno" placeholder="Ex: 2015">
-            <label>Logotipo / Escudo do Time</label>
-            <input type="file" id="cadEscudo" accept="image/*">
-            <label>Sobre o Time / Histórico</label>
-            <textarea id="cadSobre" rows="3" placeholder="Fale um pouco sobre o histórico do time, nível de competitividade, cores do uniforme principal..."></textarea>
-            <button class="btn" onclick="cadastrar()">Salvar e Criar Perfil</button>
-            <button class="btn btn-secundario" onclick="mostrarAba('Login')">Voltar ao Login</button>
-        </div>
-
-        <div id="secaoAgendamento" style="display:none;">
-            <div class="perfil-resumo">
-                ⚽ <strong>Bem-vindo,</strong> <span id="userNome" style="color:#00f3ff; font-weight:bold;">...</span>!<br>
-                🛡️ <strong>Sua Equipe:</strong> <span id="userTime" style="color:#00ff88; font-weight:bold;">...</span>
+        <!-- PAINEL ADMINISTRADOR -->
+        <div id="painelAdmin" class="admin-panel">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2>Gerenciar Jogadores</h2>
+                <button class="btn btn-del btn-sm" onclick="sairAdmin()">Sair</button>
+            </div>
+            
+            <div class="form-group" style="background: #f9f9f9; padding: 20px; border-radius: 15px;">
+                <h3>Adicionar Novo Craque</h3>
+                <div class="form-group">
+                    <label>Nome do Jogador</label>
+                    <input type="text" id="cadNome" placeholder="Ex: Pelé">
+                </div>
+                <div class="form-group">
+                    <label>Equipe / Time</label>
+                    <input type="text" id="cadEquipe" placeholder="Ex: Santos FC">
+                </div>
+                <div class="form-group">
+                    <label>Foto do Jogador (Upload)</label>
+                    <input type="file" id="cadFoto" accept="image/*">
+                </div>
+                <button class="btn btn-add" onclick="salvarJogador()">CADASTRAR JOGADOR</button>
             </div>
 
-            <div class="abas-container">
-                <button id="btnAbaAgendar" class="aba-btn ativa" onclick="mudarSubAba('agendar')">Marcar Jogo</button>
-                <button id="btnAbaTimes" class="aba-btn" onclick="mudarSubAba('times')">Ver Equipes</button>
-            </div>
-
-            <div id="subAbaAgendar">
-                <h3>Agendar Novo Confronto</h3>
-                <label>Data Escolhida</label>
-                <input type="date" id="dataJogo">
-                <label>Horário</label>
-                <select id="horarioJogo">
-                    <option value="">Selecione um horário disponível</option>
-                    <option value="08:00 - 09:00">08:00 às 09:00</option>
-                    <option value="09:00 - 10:00">09:00 às 10:00</option>
-                    <option value="10:00 - 11:00">10:00 às 11:00</option>
-                    <option value="11:00 - 12:00">11:00 às 12:00</option>
-                    <option value="14:00 - 15:00">14:00 às 15:00</option>
-                    <option value="15:00 - 16:00">15:00 às 16:00</option>
-                    <option value="16:00 - 17:00">16:00 às 17:00</option>
-                    <option value="17:00 - 18:00">17:00 às 18:00</option>
-                    <option value="18:00 - 19:00">18:00 às 19:00</option>
-                    <option value="19:00 - 20:00">19:00 às 20:00</option>
-                    <option value="20:00 - 21:00">20:00 às 21:00</option>
-                    <option value="21:00 - 22:00">21:00 às 22:00</option>
-                </select>
-                <label>Condição Financeira</label>
-                <div class="radio-group">
-                    <label class="radio-option"><input type="radio" name="financeiro" value="Paga Tudo" checked onchange="atualizarOpcoesRival()"> Mandante Paga Tudo</label>
-                    <label class="radio-option"><input type="radio" name="financeiro" value="Rachar" onchange="atualizarOpcoesRival()"> Rachar Valor da Quadra</label>
-                </div>
-                <label>Quem será o Adversário?</label>
-                <div class="radio-group">
-                    <label class="radio-option"><input type="radio" name="tipoRival" value="Conhecido" checked onchange="atualizarAbasRival()"> Já tenho rival fixo</label>
-                    <label class="radio-option"><input type="radio" name="tipoRival" value="Procurar" onchange="atualizarAbasRival()"> Procurar adversário no site</label>
-                </div>
-
-                <div id="campoRivalFixo">
-                    <label>Nome do Rival</label>
-                    <input type="text" id="rivalNome" placeholder="Digite o nome do time adversário">
-                </div>
-                <div id="campoRivalAleatorio" style="display:none;">
-                    <p style="color:#00ff88; font-size:0.85rem; margin-bottom:5px;">💡 O site fará um sorteio imediato de um rival cadastrado para você!</p>
-                    <button class="btn btn-secundario" style="margin-top:0;" onclick="buscarRivalAleatorio()">🎯 Sortear Rival Aleatório</button>
-                </div>
-
-                <button class="btn" onclick="processarAgendamento()">Finalizar e Registrar Pedido</button>
-                <button class="btn btn-danger" onclick="deslogar()">Sair da Conta</button>
-            </div>
-
-            <div id="subAbaTimes" style="display:none;">
-                <h3>Equipes Registradas</h3>
-                <p style="color:#bdc3c7; font-size:0.85rem; margin-bottom:10px;">Clique em uma equipe para analisar a ficha técnica completa e entrar em contato direto pelo WhatsApp.</p>
-                <div class="lista-times-grid" id="listaTimesCadastrados"></div>
-                
-                <div id="detalhesTimeSelecionado" class="perfil-detalhes-bloco">
-                    <div class="topo-detalhe">
-                        <img id="detalheEscudo" class="escudo-detalhe" src="">
-                        <div>
-                            <h3 id="detalheNome" style="text-align:left; margin:0; color:#00ff88;">-</h3>
-                            <p style="margin:4px 0 0 0; font-size:0.85rem; color:#bdc3c7;">📅 Fundação: <span id="detalheAno">-</span></p>
-                            <p style="margin:2px 0 0 0; font-size:0.85rem; color:#bdc3c7;">👤 Representante: <span id="detalheResp">-</span></p>
-                        </div>
-                    </div>
-                    <label style="margin-top:0; color:#00f3ff; font-size:0.9rem;">Sobre a Equipe:</label>
-                    <p id="detalheSobre" style="font-size:0.9rem; color:#fff; background:#16222f; padding:10px; border-radius:5px; margin:5px 0 0 0; line-height:1.4; font-style:italic;"></p>
-                    <a id="detalheWhats" class="btn-whats" href="#" target="_blank">💬 Chamar no WhatsApp</a>
-                </div>
-            </div>
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Foto</th>
+                        <th>Nome</th>
+                        <th>Gols</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="adminTableBody">
+                    <!-- Gerenciamento injetado via JS -->
+                </tbody>
+            </table>
         </div>
     </div>
 
-    <div id="modalConfirmacao" class="modal" style="display: none;">
+    <!-- MODAL LINKS DOS GOLS -->
+    <div id="modalGols" class="modal">
         <div class="modal-content">
-            <h3 id="modalTitulo" style="color:#00ff88; margin-top:0;">Pedido Registrado!</h3>
-            <p id="modalTexto" style="color:#c5c6c7; line-height:1.5; font-size:0.95rem;"></p>
-            
-            <div id="areaContatoRival" style="display:none;" class="box-perfil-adversario">
-                <div style="display:flex; align-items:center; gap:12px; margin-bottom:10px;">
-                    <img id="rivalPerfilEscudo" src="" style="width:50px; height:50px; border-radius:50%; border:2px solid #ff416c; background:#fff; object-fit:cover;">
-                    <div>
-                        <h4 id="rivalPerfilTime" style="margin:0; color:#fff;">-</h4>
-                        <p style="margin:2px 0 0 0; font-size:0.75rem; color:#bdc3c7;">Fundado em: <span id="rivalPerfilAno">-</span></p>
-                    </div>
-                </div>
-                <p id="rivalPerfilSobre" style="font-size:0.8rem; color:#bdc3c7; font-style:italic; margin:5px 0 10px 0; line-height:1.3;"></p>
-                <p style="margin:3px 0; font-size:0.85rem;">👤 <strong>Contato:</strong> <span id="rivalRespNome">-</span></p>
-                <p style="margin:3px 0; font-size:0.85rem;">📞 <strong>Celular:</strong> <span id="rivalRespCelular">-</span></p>
-            </div>
-
-            <button class="btn" style="margin-top:20px;" onclick="document.getElementById('modalConfirmacao').style.display='none';">Fechar Janela</button>
+            <span class="close-modal" onclick="fecharModal()">&times;</span>
+            <h2 style="font-family: 'Orbitron'; color: var(--accent);" id="modalPlayerName">Veja Meus Gols</h2>
+            <div id="linksContainer"></div>
         </div>
     </div>
 
     <script>
+        // CONFIGURAÇÃO FIREBASE
         const firebaseConfig = {
-            apiKey: "AIzaSyCMivYBxCSnu2HvS6wD7aWJOuK7z9f7G40",
-            authDomain: "ranking-gols.firebaseapp.com",
-            databaseURL: "https://ranking-gols-default-rtdb.firebaseio.com",
-            projectId: "ranking-gols",
-            storageBucket: "ranking-gols.firebasestorage.app",
-            messagingSenderId: "866441770590",
-            appId: "1:866441770590:web:7cb5aab9a22aa2782466cf",
-            measurementId: "G-N0HSRYLP3G"
+            databaseURL: "https://ranking-gols-default-rtdb.firebaseio.com"
         };
-        
         firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-        const auth = firebase.auth();
-        let dadosUsuarioLogado = null;
-        let rivalAleatorioSelecionado = null;
+        const db = firebase.database();
 
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                database.ref('/usuarios/' + user.uid).once('value').then(snapshot => {
-                    dadosUsuarioLogado = snapshot.val();
-                    if(!dadosUsuarioLogado) {
-                        dadosUsuarioLogado = {
-                            responsavel: user.email.split('@')[0],
-                            nomeTime: "Time Temporário",
-                            urlEscudo: "https://via.placeholder.com/250?text=TIME",
-                            anoFundacao: "2026",
-                            sobreTime: "Criado automaticamente.",
-                            celular: "(00) 00000-0000",
-                            uid: user.uid
-                        };
-                        database.ref('/usuarios/' + user.uid).set(dadosUsuarioLogado);
+        let isAdmin = false;
+
+        // LOGIN ADMIN SIMPLES
+        function authAdmin() {
+            Swal.fire({
+                title: 'Acesso Administrativo',
+                html: `
+                    <input type="text" id="swal-input1" class="swal2-input" placeholder="Usuário">
+                    <input type="password" id="swal-input2" class="swal2-input" placeholder="Senha">
+                `,
+                focusConfirm: false,
+                confirmButtonText: 'Entrar',
+                confirmButtonColor: '#2ecc71',
+                preConfirm: () => {
+                    const user = document.getElementById('swal-input1').value;
+                    const pass = document.getElementById('swal-input2').value;
+                    if (user === 'admin' && pass === '123456') {
+                        return true;
                     }
+                    Swal.showValidationMessage('Acesso Negado!');
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    isAdmin = true;
+                    document.getElementById('painelCliente').classList.add('hidden');
+                    document.getElementById('painelAdmin').style.display = 'block';
+                    document.getElementById('btnAdminAccess').classList.add('hidden');
+                }
+            });
+        }
 
-                    document.getElementById('userNome').innerText = dadosUsuarioLogado.responsavel;
-                    document.getElementById('userTime').innerText = dadosUsuarioLogado.nomeTime;
-                    mostrarAba('Agendamento');
-                    carregarTimesCadastrados();
+        function sairAdmin() {
+            location.reload();
+        }
 
-                }).catch(err => {
-                    alert("Erro ao acessar o Banco: " + err.message);
-                    mostrarAba('Login');
-                });
-            } else { 
-                mostrarAba('Login');
+        // SALVAR JOGADOR
+        async function salvarJogador() {
+            const nome = document.getElementById('cadNome').value;
+            const equipe = document.getElementById('cadEquipe').value;
+            const fotoInput = document.getElementById('cadFoto');
+            
+            if(!nome || !equipe) return Swal.fire('Erro', 'Preencha nome e equipe', 'error');
+
+            let fotoBase64 = "https://via.placeholder.com/150?text=Sem+Foto";
+
+            if (fotoInput.files[0]) {
+                fotoBase64 = await convertBase64(fotoInput.files[0]);
             }
+
+            db.ref('jogadores').push({
+                nome: nome,
+                equipe: equipe,
+                foto: fotoBase64,
+                gols: 0,
+                links: []
+            }).then(() => {
+                Swal.fire('Sucesso', 'Jogador cadastrado!', 'success');
+                document.getElementById('cadNome').value = '';
+                document.getElementById('cadEquipe').value = '';
+                document.getElementById('cadFoto').value = '';
+            });
+        }
+
+        function convertBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        // ESCUTAR DADOS EM TEMPO REAL
+        db.ref('jogadores').on('value', snapshot => {
+            const data = snapshot.val();
+            const jogadoresArray = [];
+
+            for (let id in data) {
+                jogadoresArray.push({ id, ...data[id] });
+            }
+
+            // Ordenar por Gols (Decrescente)
+            jogadoresArray.sort((a, b) => b.gols - a.gols);
+
+            renderCliente(jogadoresArray);
+            renderAdmin(jogadoresArray);
         });
 
-        function mostrarAba(aba) {
-            document.getElementById('secaoLogin').style.display = aba === 'Login' ? 'block' : 'none';
-            document.getElementById('secaoCadastro').style.display = aba === 'Cadastro' ? 'block' : 'none';
-            document.getElementById('secaoAgendamento').style.display = aba === 'Agendamento' ? 'block' : 'none';
-            document.getElementById('modalConfirmacao').style.display = 'none';
-        }
+        // RENDERIZAÇÃO CLIENTE
+        function renderCliente(jogadores) {
+            const list = document.getElementById('rankingList');
+            list.innerHTML = '';
 
-        function mudarSubAba(subAba) {
-            document.getElementById('subAbaAgendar').style.display = subAba === 'agendar' ? 'block' : 'none';
-            document.getElementById('subAbaTimes').style.display = subAba === 'times' ? 'block' : 'none';
-            
-            document.getElementById('btnAbaAgendar').classList.toggle('ativa', subAba === 'agendar');
-            document.getElementById('btnAbaTimes').classList.toggle('ativa', subAba === 'times');
-            if(subAba === 'times') {
-                carregarTimesCadastrados();
-            }
-        }
-
-        let listaGlobalTimes = {};
-        function carregarTimesCadastrados() {
-            const container = document.getElementById('listaTimesCadastrados');
-            container.innerHTML = `<p style="text-align:center; color:#c5c6c7;">Carregando equipes...</p>`;
-            
-            database.ref('/usuarios').once('value').then(snapshot => {
-                container.innerHTML = ""; 
-                listaGlobalTimes = {};
+            jogadores.forEach((j, index) => {
+                const card = document.createElement('div');
+                card.className = 'player-card';
+                card.onclick = () => verGols(j.nome, j.links);
                 
-                if(!snapshot.exists()) {
-                    container.innerHTML = `<p style="text-align:center; color:#a5a6a7;">Nenhum time registrado até o momento.</p>`;
-                    return;
-                }
-
-                snapshot.forEach(childSnapshot => {
-                    const timeData = childSnapshot.val();
-                    const key = childSnapshot.key;
-                    
-                    if (timeData.nomeTime) {
-                        listaGlobalTimes[key] = timeData;
-                        const cardHtml = `
-                            <div class="card-time-lista" onclick="verDetalhesTime('${key}')">
-                                <img src="${timeData.urlEscudo || 'https://via.placeholder.com/250?text=TIME'}" class="escudo-lista-time" onerror="this.src='https://via.placeholder.com/250?text=⚽'">
-                                <div class="info-lista-time">
-                                    <h4>${timeData.nomeTime}</h4>
-                                    <p>📅 <strong>Fundação:</strong> ${timeData.anoFundacao || 'Não Informada'}</p>
-                                    <p>👤 <strong>Resp:</strong> ${timeData.responsavel || 'Desconhecido'}</p>
-                                    <p style="font-style: italic; color:#85929E; margin-top:4px; font-size:0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 320px;">
-                                        "${timeData.sobreTime || 'Sem descrição.'}"
-                                    </p>
-                                </div>
-                            </div>
-                        `;
-                        container.innerHTML += cardHtml;
-                    }
-                });
-            }).catch(err => {
-                container.innerHTML = `<p style="text-align:center; color:#ff2222;">Erro ao carregar dados: ${err.message}</p>`;
+                card.innerHTML = `
+                    <div class="pos">${index + 1}º</div>
+                    <div class="photo-frame">
+                        <img src="${j.foto}">
+                    </div>
+                    <div class="info">
+                        <h3>${j.nome}</h3>
+                        <p><i class="fas fa-users"></i> ${j.equipe}</p>
+                    </div>
+                    <div class="goals-count">
+                        ${j.gols}
+                        <span>GOLS</span>
+                    </div>
+                `;
+                list.appendChild(card);
             });
         }
 
-        function verDetalhesTime(key) {
-            const time = listaGlobalTimes[key];
-            if(!time) return;
+        // RENDERIZAÇÃO ADMIN
+        function renderAdmin(jogadores) {
+            const tbody = document.getElementById('adminTableBody');
+            tbody.innerHTML = '';
 
-            document.getElementById('detalheEscudo').src = time.urlEscudo || 'https://via.placeholder.com/250?text=TIME';
-            document.getElementById('detalheNome').innerText = time.nomeTime;
-            document.getElementById('detalheAno').innerText = time.anoFundacao || 'Não informado';
-            document.getElementById('detalheResp').innerText = time.responsavel || 'Desconhecido';
-            document.getElementById('detalheSobre').innerText = time.sobreTime || 'Sem descrição cadastrada.';
-            
-            const numCelular = time.celular ? time.celular.replace(/\D/g, '') : '';
-            document.getElementById('detalheWhats').href = `https://wa.me/55${numCelular}?text=Olá,%20vi%20seu%20time%20no%20Arena%20Olho%20no%20Lance!%20Bora%20marcar%20um%20jogo?`;
-            document.getElementById('detalhesTimeSelecionado').style.display = 'block';
-            document.getElementById('detalhesTimeSelecionado').scrollIntoView({ behavior: 'smooth' });
-        }
-
-        function atualizarOpcoesRival() {
-            if(document.querySelector('input[name="financeiro"]:checked').value === "Rachar") {
-                document.querySelector('input[name="tipoRival"][value="Procurar"]').checked = true;
-                atualizarAbasRival();
-            }
-        }
-
-        function atualizarAbasRival() {
-            const tipoRival = document.querySelector('input[name="tipoRival"]:checked').value;
-            if(document.querySelector('input[name="financeiro"]:checked').value === "Rachar" && tipoRival === "Conhecido") {
-                alert("Para rachar o valor pelo site, selecione 'Procurar adversário no site'.");
-                document.querySelector('input[name="tipoRival"][value="Procurar"]').checked = true;
-                document.getElementById('campoRivalFixo').style.display = 'none';
-                document.getElementById('campoRivalAleatorio').style.display = 'block';
-                return;
-            }
-            
-            if (tipoRival === 'Conhecido') {
-                document.getElementById('campoRivalFixo').style.display = 'block';
-                document.getElementById('campoRivalAleatorio').style.display = 'none';
-                rivalAleatorioSelecionado = null;
-            } else {
-                document.getElementById('campoRivalFixo').style.display = 'none';
-                document.getElementById('campoRivalAleatorio').style.display = 'block';
-            }
-        }
-
-        function buscarRivalAleatorio() {
-            database.ref('/usuarios').once('value').then(snapshot => {
-                let timesDisponiveis = [];
-                
-                snapshot.forEach(child => {
-                    const t = child.val();
-                    if (t.nomeTime && t.uid !== dadosUsuarioLogado.uid) {
-                        timesDisponiveis.push(t);
-                    }
-                });
-
-                if (timesDisponiveis.length === 0) {
-                    alert("Ainda não há outros times cadastrados no sistema para buscar de forma aleatória.");
-                    return;
-                }
-
-                const indiceSorteado = Math.floor(Math.random() * timesDisponiveis.length);
-                rivalAleatorioSelecionado = timesDisponiveis[indiceSorteado];
-                alert(`🎯 Rival Encontrado com Sucesso: ${rivalAleatorioSelecionado.nomeTime}! Agora escolha o dia/horário e clique em Finalizar Pedido.`);
-            }).catch(err => alert("Erro ao sortear rival: " + err.message));
-        }
-
-        function cadastrar() {
-            const email = document.getElementById('cadEmail').value.trim();
-            const BlackPass = document.getElementById('cadSenha').value;
-            const nome = document.getElementById('cadNome').value.trim(); 
-            const celular = document.getElementById('cadCelular').value.trim();
-            const time = document.getElementById('cadTime').value.trim(); 
-            const escudoInput = document.getElementById('cadEscudo');
-            const ano = document.getElementById('cadAno').value.trim(); 
-            const sobre = document.getElementById('cadSobre').value.trim();
-            
-            if(!email || !BlackPass || !nome || !celular || !time || !ano || !sobre) {
-                return alert("Por favor, preencha todos os campos obrigatórios!");
-            }
-
-            const salvarUsuarioComEscudo = (escudoBase64) => {
-                auth.createUserWithEmailAndPassword(email, BlackPass).then(cred => {
-                    return database.ref('/usuarios/' + cred.user.uid).set({ 
-                        responsavel: nome, celular: celular, nomeTime: time, 
-                        urlEscudo: escudoBase64, 
-                        anoFundacao: ano, sobreTime: sobre, uid: cred.user.uid
-                    });
-                }).then(() => {
-                    alert("Conta e time criados com sucesso!");
-                    carregarTimesCadastrados();
-                }).catch(err => alert("Erro no cadastro: " + err.message));
-            };
-
-            if (escudoInput.files && escudoInput.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    salvarUsuarioComEscudo(e.target.result);
-                };
-                reader.readAsDataURL(escudoInput.files[0]);
-            } else {
-                salvarUsuarioComEscudo("https://via.placeholder.com/250?text=TIME");
-            }
-        }
-
-        function logar() { 
-            const email = document.getElementById('loginEmail').value.trim();
-            const senha = document.getElementById('loginSenha').value;
-            if(!email || !senha) return alert("Por favor, informe o e-mail e a senha!");
-            auth.signInWithEmailAndPassword(email, senha).catch(err => {
-                alert("Erro ao fazer login: " + err.message);
+            jogadores.forEach(j => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><img src="${j.foto}"></td>
+                    <td><strong>${j.nome}</strong><br><small>${j.equipe}</small></td>
+                    <td>
+                        <button class="btn btn-plus btn-sm" onclick="alterarGol('${j.id}', 1)">+</button>
+                        <b style="margin: 0 10px">${j.gols}</b>
+                        <button class="btn btn-minus btn-sm" onclick="alterarGol('${j.id}', -1)">-</button>
+                    </td>
+                    <td>
+                        <button class="btn btn-plus btn-sm" onclick="gerenciarLinks('${j.id}')">LINK</button>
+                        <button class="btn btn-del btn-sm" onclick="excluirJogador('${j.id}')">X</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
             });
         }
 
-        function deslogar() { 
-            auth.signOut().then(() => { mostrarAba('Login'); });
+        // FUNÇÕES DE EDIÇÃO
+        function alterarGol(id, qtd) {
+            const ref = db.ref('jogadores/' + id + '/gols');
+            ref.transaction(currentGols => {
+                return (currentGols || 0) + qtd;
+            });
         }
 
-        function processarAgendamento() {
-            const data = document.getElementById('dataJogo').value;
-            const horario = document.getElementById('horarioJogo').value;
-            const financeiro = document.querySelector('input[name="financeiro"]:checked').value;
-            const tipoRival = document.querySelector('input[name="tipoRival"]:checked').value;
-            if (!data || !horario) return alert("Escolha o dia e o horário!");
-            document.getElementById('areaContatoRival').style.display = 'none';
+        function excluirJogador(id) {
+            Swal.fire({
+                title: 'Tem certeza?',
+                text: "O jogador será removido permanentemente!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e74c3c',
+                cancelButtonText: 'Cancelar',
+                confirmButtonText: 'Sim, excluir!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    db.ref('jogadores/' + id).remove();
+                }
+            });
+        }
 
-            if (tipoRival === "Conhecido") {
-                const rivalNome = document.getElementById('rivalNome').value || "Adversário";
-                const rivalEscudo = "https://via.placeholder.com/250?text=RIVAL";
-                salvarNoFirebase(data, horario, dadosUsuarioLogado.nomeTime, dadosUsuarioLogado.urlEscudo, rivalNome, rivalEscudo, "Pendente", financeiro, dadosUsuarioLogado, null);
-            } 
-            else if (tipoRival === "Procurar" && rivalAleatorioSelecionado) {
-                salvarNoFirebase(data, horario, dadosUsuarioLogado.nomeTime, dadosUsuarioLogado.urlEscudo, rivalAleatorioSelecionado.nomeTime, rivalAleatorioSelecionado.urlEscudo, "Pendente", financeiro, dadosUsuarioLogado, null);
-                document.getElementById('modalTitulo').innerText = "💥 CONFRONTO AGENDADO COM RIVAL!";
-                document.getElementById('modalTexto').innerText = "Confronto direto criado! Veja abaixo a ficha técnica do seu oponente:";
-                document.getElementById('rivalPerfilEscudo').src = rivalAleatorioSelecionado.urlEscudo || "https://via.placeholder.com/250?text=RIVAL";
-                document.getElementById('rivalPerfilTime').innerText = rivalAleatorioSelecionado.nomeTime;
-                document.getElementById('rivalPerfilAno').innerText = rivalAleatorioSelecionado.anoFundacao || "Não Informado";
-                document.getElementById('rivalPerfilSobre').innerText = rivalAleatorioSelecionado.sobreTime || "Sem descrição.";
-                document.getElementById('rivalRespNome').innerText = rivalAleatorioSelecionado.responsavel;
-                document.getElementById('rivalRespCelular').innerText = rivalAleatorioSelecionado.celular || "Não Informado";
-                document.getElementById('areaContatoRival').style.display = 'block';
-            } 
-            else {
-                database.ref('/agendamentos').orderByChild('data').equalTo(data).once('value').then(snapshot => {
-                    let matchID = null; let matchJogo = null;
-        
-                    snapshot.forEach(child => {
-                        const jogo = child.val();
-                        if (jogo.horario === horario && jogo.status === "Aguardando Rival" && jogo.modoFinanceiro === financeiro && jogo.nomeCasa !== dadosUsuarioLogado.nomeTime) {
-                            matchID = child.key; matchJogo = child.val();
-                        }
+        function gerenciarLinks(id) {
+            Swal.fire({
+                title: 'Adicionar Link do Gol',
+                input: 'url',
+                inputLabel: 'Cole a URL do vídeo do gol',
+                inputPlaceholder: 'https://youtube.com/...',
+                showCancelButton: true,
+                confirmButtonText: 'Salvar Link',
+                confirmButtonColor: '#2ecc71'
+            }).then((result) => {
+                if (result.value) {
+                    const linksRef = db.ref('jogadores/' + id + '/links');
+                    linksRef.once('value', snapshot => {
+                        const currentLinks = snapshot.val() || [];
+                        currentLinks.push(result.value);
+                        linksRef.set(currentLinks);
+                        Swal.fire('Salvo!', 'Link adicionado com sucesso.', 'success');
                     });
+                }
+            });
+        }
 
-                    if (matchJogo) {
-                        database.ref('/agendamentos/' + matchID).update({
-                            nomeVisitante: dadosUsuarioLogado.nomeTime,
-                            urlEscudoVisitante: dadosUsuarioLogado.urlEscudo,
-                            responsavelVisitante: dadosUsuarioLogado.responsavel,
-                            celularVisitante: dadosUsuarioLogado.celular,
-                            uidVisitante: dadosUsuarioLogado.uid,
-                            status: "Pendente" 
-                        }).then(() => {
-                            document.getElementById('modalTitulo').innerText = "💥 CONFRONTO ENCONTRADO!";
-                            document.getElementById('modalTexto').innerText = "Jogo casado! Analise o perfil do seu adversário abaixo, combine os uniformes e chame a quadra para liberar!";
-                            document.getElementById('rivalPerfilEscudo').src = matchJogo.escudoCasaPerfil || matchJogo.urlEscudoCasa;
-                            document.getElementById('rivalPerfilTime').innerText = matchJogo.nomeCasa;
-                            document.getElementById('rivalPerfilAno').innerText = matchJogo.anoCasaPerfil || "Não Informado";
-                            document.getElementById('rivalPerfilSobre').innerText = matchJogo.sobreCasaPerfil || "Sem descrição.";
-                            document.getElementById('rivalRespNome').innerText = matchJogo.responsavelCasa;
-                            document.getElementById('rivalRespCelular').innerText = matchJogo.celularCasa;
-                            
-                            document.getElementById('areaContatoRival').style.display = 'block';
-                            document.getElementById('modalConfirmacao').style.display = 'block';
-                        });
-                    } else {
-                        salvarNoFirebase(data, horario, dadosUsuarioLogado.nomeTime, dadosUsuarioLogado.urlEscudo, "Procurando...", "https://via.placeholder.com/250?text=?", "Aguardando Rival", financeiro, dadosUsuarioLogado, true);
-                    }
+        // MODAL CLIENTE
+        function verGols(nome, links) {
+            const container = document.getElementById('linksContainer');
+            document.getElementById('modalPlayerName').innerText = `Gols de ${nome}`;
+            container.innerHTML = '';
+
+            if(!links || links.length === 0) {
+                container.innerHTML = '<p style="text-align:center; opacity:0.5;">Nenhum vídeo cadastrado ainda.</p>';
+            } else {
+                links.forEach((link, i) => {
+                    const a = document.createElement('a');
+                    a.href = link;
+                    a.target = '_blank';
+                    a.className = 'video-link';
+                    a.innerHTML = `<i class="fab fa-youtube"></i> Assitir Gol #${i+1}`;
+                    container.appendChild(a);
                 });
             }
+
+            document.getElementById('modalGols').style.display = 'flex';
         }
 
-        function salvarNoFirebase(data, horario, casa, escudoCasa, visitante, escudoVisitante, status, financeiro, donoDados, colocarFila) {
-            const jogoData = {
-                data: data, horario: horario,
-                nome
+        function fecharModal() {
+            document.getElementById('modalGols').style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('modalGols');
+            if (event.target == modal) fecharModal();
+        }
+    </script>
+</body>
+</html>
